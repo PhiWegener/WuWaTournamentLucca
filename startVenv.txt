@@ -1,0 +1,16 @@
+Arbeitslaptop:
+cd /mnt/c/Users/pwegener/Documents/.skripting/wuwa-tournament/
+source .venv/bin/activate
+
+Rechner Zuhause:
+ssh dev-laptop
+cd dev/wuwa-tournament
+source .venv/bin/activate
+
+für datenbank reset/änderungen: app.db löschen und "python -m app.main" ausführen
+
+localhost:
+uvicorn app.main:app --reload
+
+serverLaptopZuhause:
+uvicorn app.main:app --host 192.168.2.118 --port 8000 --reload
