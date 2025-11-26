@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 
 from app.database import initDatabase
-from app.routers import players, bosses, resonators, matches, bosstimes, tournaments, users
+from app.routers import players, bosses, resonators, matches, bosstimes, tournaments, users, admin
 
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+
+templates = Jinja2Templates(directory="app/templates")
 
 def createApp() -> FastAPI:
     app = FastAPI(title="WuWa Tournament API")
@@ -14,6 +18,7 @@ def createApp() -> FastAPI:
     app.include_router(bosstimes.router)
     app.include_router(tournaments.router)
     app.include_router(users.router)
+    app.include_router(admin.router)
 
     @app.get("/health")
     def health():

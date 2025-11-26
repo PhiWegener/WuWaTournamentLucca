@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from app.database import getSession
 from app.models import User, Player, UserRole
 from app.schemas import UserCreate, UserRead
-from app.security import hashPassword
+from app.passwords import hashPassword
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -28,9 +28,11 @@ def createUser(data: UserCreate, session: Session = Depends(getSession)):
         if not player:
             raise HTTPException(status_code=400, detail="Player not found")
 
+    passwordHash=hashPassword(data.password)
+
     user = User(
         username=data.username,
-        passwordHash=hashPassword(data.password),
+        passwordHash=passwordHash,
         role=data.role,
         playerId=data.playerId,
     )
