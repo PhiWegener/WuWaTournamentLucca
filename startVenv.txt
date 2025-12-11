@@ -14,3 +14,6 @@ uvicorn app.main:app --reload
 
 serverLaptopZuhause:
 uvicorn app.main:app --host 192.168.2.118 --port 8000 --reload
+
+JPrpi:
+uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload
