@@ -8,6 +8,8 @@ greenlet==3.2.4
 h11==0.16.0
 httptools==0.7.1
 idna==3.11
+nodeenv==1.9.1
+npm==0.1.1
 passlib==1.7.4
 pydantic==2.12.4
 pydantic_core==2.41.5
