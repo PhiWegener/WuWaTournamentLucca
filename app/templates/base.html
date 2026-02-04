@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        nav a { margin-right: 15px; }
+        form { margin-top: 20px; }
+        input { margin: 5px 0; padding: 6px; width: 200px; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="/admin">Dashboard</a>
+    <a href="/admin/tournaments">Tournaments</a>
+    <a href="/admin/bosses">Bosses</a>
+    <a href="/admin/resonators">Resonators</a>
+    <a href="/admin/users">Users</a>
+</nav>
+<hr>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>

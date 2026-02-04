@@ -1,0 +1,94 @@
+/* ===============================================
+   WUTHERING WAVES – COMPLETE UI THEME
+   =============================================== */
+
+:root {
+  --ww-bg: #0b0e11;
+  --ww-bg-alt: #12151a;
+  --ww-bg-panel: #1a1f26;
+
+  --ww-border: #2a2f36;
+  --ww-border-light: #3a3f46;
+
+  --ww-text: #f0f4ff;
+  --ww-text-dim: #a0a8b7;
+
+  --ww-accent: #6cbcff;
+  --ww-accent-light: #8cd3ff;
+  --ww-accent-dark: #2a6f99;
+
+  --ww-danger: #ff6e6e;
+  --ww-success: #4de6a9;
+
+  --ww-shadow: 0 0 15px rgba(108, 188, 255, 0.15);
+  --ww-glow: 0 0 20px rgba(108, 188, 255, 0.4);
+
+  --transition: 0.25s ease;
+  --transition-fast: 0.15s ease;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+}
+
+/* ===== Global ===== */
+body {
+  margin: 0;
+  background: var(--ww-bg);
+  color: var(--ww-text);
+  font-family: 'Inter', sans-serif;
+}
+
+/* ===== Page Wrapper ===== */
+.page {
+  padding: var(--space-lg);
+  position: relative;
+}
+
+/* ===== FX classes ===== */
+.fx-glow {
+  animation: fxGlow 2.5s infinite alternate;
+}
+
+@keyframes fxGlow {
+  from { filter: drop-shadow(0 0 5px rgba(108,188,255,0.2)); }
+  to   { filter: drop-shadow(0 0 15px rgba(108,188,255,0.6)); }
+}
+
+.fx-scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03) 0px,
+    rgba(255,255,255,0.03) 1px,
+    transparent 4px,
+    transparent 6px
+  );
+  pointer-events: none;
+  animation: scanlines 9s linear infinite;
+}
+
+@keyframes scanlines {
+  from { background-position: 0 0; }
+  to   { background-position: 0 200px; }
+}
+
+.fx-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 30px 30px;
+  animation: moveGrid 15s linear infinite;
+}
+
+@keyframes moveGrid {
+  from { background-position: 0px 0px; }
+  to   { background-position: 140px 300px; }
+}
+

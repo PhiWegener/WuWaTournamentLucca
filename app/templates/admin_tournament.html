@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tournaments</h2>
+
+<ul>
+{% for t in tournaments %}
+    <li>{{ t.id }} – {{ t.name }}</li>
+{% endfor %}
+</ul>
+
+<h3>Neues Tournament</h3>
+<form method="post">
+    <input name="name" placeholder="Tournament Name">
+    <button type="submit">Hinzufügen</button>
+</form>
+{% endblock %}
