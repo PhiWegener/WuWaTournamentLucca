@@ -1,0 +1,25 @@
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
+
+from .models import (
+    User, Player, Tournament, Boss, Resonator,
+    Match, MatchDraftAction, BossTime
+)
+
+
+@admin.register(User)
+class UserAdmin(DjangoUserAdmin):
+    fieldsets = DjangoUserAdmin.fieldsets + (
+        ("App Fields", {"fields": ("role", "player")}),
+    )
+    list_display = ("username", "email", "role", "player", "is_staff", "is_superuser")
+    list_filter = ("role", "is_staff", "is_superuser")
+
+
+admin.site.register(Player)
+admin.site.register(Tournament)
+admin.site.register(Boss)
+admin.site.register(Resonator)
+admin.site.register(Match)
+admin.site.register(MatchDraftAction)
+admin.site.register(BossTime)

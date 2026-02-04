@@ -1,2 +1,4 @@
-cd /mnt/c/Users/pwegener/Documents/.skripting/wuwa-tournament/
-source .venv/bin/activate
+backend:
+
+cd /mnt/c/Users/pwegener/Documents/.skripting/wuwa-tournament/wuwa-django
+source django-venv/bin/activate
