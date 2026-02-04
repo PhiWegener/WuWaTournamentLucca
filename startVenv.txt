@@ -1,8 +1,15 @@
 Django:
+wenn anpassungen an Model:
+python3 manage.py makemigrations
+python3 manage.py migrate
 
-arbeit:
-cd /mnt/c/Users/pwegener/Documents/.skripting/wuwa-tournament/wuwa-django
+starten:
+python3 manage.py runserver
 
+wichtig! im virtualenv/docker muss django und djangorestframework installiert sein
 
 JPrpi:
 uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload
+
+
+[API] 1 einziger endpoint: /api/tournaments/1/matches/
