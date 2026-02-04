@@ -81,16 +81,22 @@ class Match(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
 
+    left_bans_confirmed = models.BooleanField(default=False)
+    right_bans_confirmed = models.BooleanField(default=False)
+    left_picks_confirmed = models.BooleanField(default=False)
+    right_picks_confirmed = models.BooleanField(default=False)
+
     def __str__(self) -> str:
         return f"{self.player_left} vs {self.player_right}"
 
 
 class MatchDraftAction(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="draft_actions")
-
+    
     step_index = models.PositiveIntegerField(db_index=True)
     action_type = models.CharField(max_length=10, choices=DraftActionType.choices)
     acting_side = models.CharField(max_length=5, choices=MatchSide.choices)
+    target_side = models.CharField(max_length=5, choices=MatchSide.choices)
 
     resonator = models.ForeignKey(Resonator, on_delete=models.CASCADE, related_name="draft_actions")
 

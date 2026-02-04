@@ -1,0 +1,28 @@
+<h2>Host Dashboard</h2>
+
+<h3>Recent Matches</h3>
+<ul>
+  {% for m in matches %}
+    <li>
+      <a href="{% url 'matchDetail' m.id %}">{{ m.player_left.name }} vs {{ m.player_right.name }}</a>
+      {% if m.boss %} (Boss: {{ m.boss.name }}) {% endif %}
+      {% if m.winner_player %} - Winner: {{ m.winner_player.name }} {% endif %}
+    </li>
+  {% empty %}
+    <li>No matches.</li>
+  {% endfor %}
+</ul>
+
+<h3>Leaderboards (Top5 per Boss)</h3>
+{% for boss, top5 in bossLeaderboards %}
+  <h4>{{ boss.name }}</h4>
+  <ol>
+    {% for bt in top5 %}
+      <li>{{ bt.player.name }} — {{ bt.best_time_seconds }}s</li>
+    {% empty %}
+      <li>No entries.</li>
+    {% endfor %}
+  </ol>
+{% endfor %}
+
+<p><a href="{% url 'logout' %}">Logout</a></p>

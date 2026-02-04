@@ -1,0 +1,15 @@
+<h2>Home</h2>
+
+{% if request.user.is_authenticated %}
+  <p>Logged in as {{ request.user.username }} ({{ request.user.role }})</p>
+
+  {% if request.user.role == "PLAYER" %}
+    <a href="{% url 'playerDashboard' %}">Player Dashboard</a>
+  {% else %}
+    <a href="{% url 'hostDashboard' %}">Host Dashboard</a>
+  {% endif %}
+
+  <p><a href="{% url 'logout' %}">Logout</a></p>
+{% else %}
+  <a href="{% url 'login' %}">Login</a>
+{% endif %}

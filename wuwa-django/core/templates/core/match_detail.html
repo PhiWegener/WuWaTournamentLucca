@@ -1,0 +1,139 @@
+<h2>Match</h2>
+
+{% if userSide %}
+  <p>You are: <b>{{ userSide }}</b></p>
+  <p>
+    Opponent:
+    {% if userSide == "LEFT" %}{{ match.player_right.name }}{% else %}{{ match.player_left.name }}{% endif %}
+  </p>
+{% endif %}
+
+
+<p>
+  {% if match.tournament %}[{{ match.tournament.name }}]{% endif %}
+  {{ match.player_left.name }} vs {{ match.player_right.name }}
+</p>
+<p>Boss: {% if match.boss %}{{ match.boss.name }}{% else %}-{% endif %}</p>
+
+<p>Status:
+  {% if match.finished_at %}FINISHED
+  {% elif match.started_at %}RUNNING
+  {% else %}SCHEDULED
+  {% endif %}
+</p>
+
+{% if isHost %}
+  <h3>Host controls</h3>
+
+  <form method="post" action="{% url 'hostMatchStart' match.id %}">
+    {% csrf_token %}
+    <button type="submit">Start</button>
+  </form>
+
+  <form method="post" action="{% url 'hostMatchFinish' match.id %}">
+    {% csrf_token %}
+    <button type="submit">Finish</button>
+  </form>
+
+  <h4>Winner & times</h4>
+  <form method="post" action="{% url 'hostSetWinner' match.id %}">
+    {% csrf_token %}
+    {{ hostWinnerForm.as_p }}
+    <button type="submit">Save</button>
+  </form>
+{% endif %}
+
+<hr>
+
+<h3>Pick/Ban</h3>
+
+<p>
+  Phase:
+  {% if not banPhaseDone %}BAN{% elif not pickPhaseDone %}PICK{% else %}DONE{% endif %}
+</p>
+
+{% if isHost %}
+  <form method="post" action="{% url 'matchDraftReset' match.id %}">
+    {% csrf_token %}
+    <button type="submit">Reset Draft</button>
+  </form>
+{% endif %}
+
+<hr>
+
+<h4>Bans LEFT → RIGHT</h4>
+<ul>
+  {% for a in bansLeftToRight %}
+    <li>{{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<h4>Bans RIGHT → LEFT</h4>
+<ul>
+  {% for a in bansRightToLeft %}
+    <li>{{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<hr>
+
+<h4>Picks LEFT</h4>
+<ul>
+  {% for a in picksLeft %}
+    <li>{{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<h4>Picks RIGHT</h4>
+<ul>
+  {% for a in picksRight %}
+    <li>{{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<hr>
+
+{% if banForm %}
+  <h4>Select 3 bans against opponent</h4>
+  <p>You are: <b>{{ userSide }}</b></p>
+  <form method="post" action="{% url 'matchConfirmBans' match.id %}">
+    {% csrf_token %}
+    {{ banForm.as_p }}
+    <button type="submit">Confirm bans</button>
+  </form>
+{% endif %}
+
+{% if pickForm %}
+  <h4>Select 3 picks (mirror picks allowed)</h4>
+  <p>You are: <b>{{ userSide }}</b></p>
+  <form method="post" action="{% url 'matchConfirmPicks' match.id %}">
+    {% csrf_token %}
+    {{ pickForm.as_p }}
+    <button type="submit">Confirm picks</button>
+  </form>
+{% endif %}
+
+<hr>
+
+{% if isPlayerInMatch %}
+  <h3>Submit time</h3>
+  {% if match.boss %}
+    <form method="post" action="{% url 'matchSubmitTime' match.id %}">
+      {% csrf_token %}
+      {{ timeForm.as_p }}
+      <button type="submit">Submit</button>
+    </form>
+  {% else %}
+    <p>No boss assigned yet.</p>
+  {% endif %}
+{% endif %}
+
+<p><a href="{% url 'playerDashboard' %}">Back</a></p>

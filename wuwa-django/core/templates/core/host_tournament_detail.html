@@ -1,0 +1,32 @@
+<h2>Tournament: {{ tournament.name }}</h2>
+
+{% if error %}<p style="color:red">{{ error }}</p>{% endif %}
+
+<h3>Matches</h3>
+<ul>
+  {% for m in matches %}
+    <li>
+      <a href="{% url 'matchDetail' m.id %}">
+        #{{ m.id }} {{ m.player_left.name }} vs {{ m.player_right.name }}
+      </a>
+      {% if m.boss %} | Boss: {{ m.boss.name }}{% endif %}
+      | Status:
+      {% if m.finished_at %}FINISHED
+      {% elif m.started_at %}RUNNING
+      {% else %}SCHEDULED
+      {% endif %}
+      {% if m.winner_player %} | Winner: {{ m.winner_player.name }}{% endif %}
+    </li>
+  {% empty %}
+    <li>No matches yet.</li>
+  {% endfor %}
+</ul>
+
+<h3>Create Match</h3>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Create</button>
+</form>
+
+<p><a href="{% url 'hostTournamentList' %}">Back to tournaments</a></p>

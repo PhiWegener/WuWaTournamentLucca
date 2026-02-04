@@ -1,0 +1,21 @@
+<h2>Player Dashboard</h2>
+
+{% if error %}<p style="color:red">{{ error }}</p>{% endif %}
+{% if player %}
+<p>Logged in as: {{ player.name }}</p>
+
+<h3>Your matches</h3>
+<ul>
+{% for m in matches %}
+  <li>
+    {% if m.started_at %}
+      <a href="{% url 'matchDetail' m.id %}">{{ m.player_left.name }} vs {{ m.player_right.name }}</a>
+    {% else %}
+      {{ m.player_left.name }} vs {{ m.player_right.name }} (not started yet)
+    {% endif %}
+  </li>
+{% endfor %}
+</ul>
+{% endif %}
+
+<p><a href="{% url 'logout' %}">Logout</a></p>

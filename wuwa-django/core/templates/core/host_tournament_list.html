@@ -1,0 +1,14 @@
+<h2>Host - Tournaments</h2>
+
+<ul>
+  {% for t in tournaments %}
+    <li>
+      <a href="{% url 'hostTournamentDetail' t.id %}">{{ t.name }}</a>
+      {% if t.is_active %}(active){% else %}(inactive){% endif %}
+    </li>
+  {% empty %}
+    <li>No tournaments.</li>
+  {% endfor %}
+</ul>
+
+<p><a href="{% url 'logout' %}">Logout</a></p>

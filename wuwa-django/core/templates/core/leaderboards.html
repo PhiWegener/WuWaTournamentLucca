@@ -1,0 +1,12 @@
+<h2>Leaderboards</h2>
+
+{% for boss, top5 in bossLeaderboards %}
+  <h3>{{ boss.name }}</h3>
+  <ol>
+    {% for bt in top5 %}
+      <li>{{ bt.player.name }} — {{ bt.best_time_seconds }}s</li>
+    {% empty %}
+      <li>No entries.</li>
+    {% endfor %}
+  </ol>
+{% endfor %}

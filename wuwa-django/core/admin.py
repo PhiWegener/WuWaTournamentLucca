@@ -9,9 +9,16 @@ from .models import (
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
+    # Beim Bearbeiten eines bestehenden Users
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("App Fields", {"fields": ("role", "player")}),
     )
+
+    # Beim Anlegen eines neuen Users (DAS war der fehlende Teil)
+    add_fieldsets = DjangoUserAdmin.add_fieldsets + (
+        ("App Fields", {"fields": ("role", "player")}),
+    )
+
     list_display = ("username", "email", "role", "player", "is_staff", "is_superuser")
     list_filter = ("role", "is_staff", "is_superuser")
 

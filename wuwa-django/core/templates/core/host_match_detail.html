@@ -1,0 +1,38 @@
+<h2>Match Detail</h2>
+
+<p>
+  Tournament: {% if match.tournament %}{{ match.tournament.name }}{% else %}-{% endif %}
+</p>
+<p>{{ match.player_left.name }} vs {{ match.player_right.name }}</p>
+<p>Boss: {% if match.boss %}{{ match.boss.name }}{% else %}-{% endif %}</p>
+
+<p>Status:
+  {% if match.finished_at %}FINISHED
+  {% elif match.started_at %}RUNNING
+  {% else %}SCHEDULED
+  {% endif %}
+</p>
+
+<h3>Control</h3>
+
+<form method="post" action="{% url 'hostMatchStart' match.id %}">
+  {% csrf_token %}
+  <button type="submit">Start Match</button>
+</form>
+
+<form method="post" action="{% url 'hostMatchFinish' match.id %}">
+  {% csrf_token %}
+  <button type="submit">Finish Match</button>
+</form>
+
+<hr>
+
+<h3>Set winner & times</h3>
+<form method="post" action="{% url 'hostSetWinner' match.id %}">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <p>Winner must be {{ match.player_left.id }} or {{ match.player_right.id }}</p>
+  <button type="submit">Save</button>
+</form>
+
+<p><a href="{% url 'hostTournamentDetail' match.tournament.id %}">Back to tournament</a></p>
