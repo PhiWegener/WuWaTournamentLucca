@@ -1,6 +1,9 @@
 from django.urls import path
 from . import views
 
+from django.urls import path
+from core.api import TournamentMatchesAPIView
+
 urlpatterns = [
     path("", views.home, name="home"),
 
@@ -30,4 +33,8 @@ urlpatterns = [
 
     # Leaderboards
     path("leaderboards/", views.leaderboards, name="leaderboards"),
+]
+
+urlpatterns += [
+    path("api/tournaments/<int:tournamentId>/matches/", TournamentMatchesAPIView.as_view(), name="api_tournament_matches"),
 ]

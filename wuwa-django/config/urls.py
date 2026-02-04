@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.urls import include
+from core.api import TournamentMatchesAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include("core.urls")),
+    path('api/tournaments/<int:tournamentId>/matches/', TournamentMatchesAPIView.as_view(), name='api_tournament_matches',),
 ]

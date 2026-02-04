@@ -89,6 +89,21 @@ class Match(models.Model):
     def __str__(self) -> str:
         return f"{self.player_left} vs {self.player_right}"
 
+    round_index = models.PositiveIntegerField(default=0, db_index=True)
+    match_index = models.PositiveIntegerField(default=0, db_index=True)
+
+    next_match = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="previous_matches",
+    )
+    next_side = models.CharField(max_length=5, choices=MatchSide.choices, null=True, blank=True)
+
+    class Meta:
+        unique_together = [("tournament", "round_index", "match_index")]
+        ordering = ["round_index", "match_index"]
 
 class MatchDraftAction(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="draft_actions")
