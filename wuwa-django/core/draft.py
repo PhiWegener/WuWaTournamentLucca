@@ -84,9 +84,30 @@ def buildDraftContext(match, requestUser):
         ).first()
 
     banForm = None
-    if isPlayerInMatch and not banPhaseDone and currentBanSlot <= BAN_COUNT:
-        # IMPORTANT: available darf usedResonators berücksichtigen (wie in deiner view)
-        banForm = BanConfirmForm(available=Resonator.objects.filter(is_enabled=True))
+
+if isPlayerInMatch and not banPhaseDone and currentBanSlot <= BAN_COUNT:
+    # used resonators (ban+pick) im match
+    usedIds = set(
+        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+    )
+
+    # allow re-choose own pending for this slot
+    existing = MatchDraftAction.objects.filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=userSide,
+        slot_index=currentBanSlot,
+        is_locked=False,
+    ).first()
+    if existing is not None:
+        usedIds.discard(existing.resonator_id)
+
+    available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedIds)
+
+    # WICHTIG: Form auch dann anzeigen, wenn available leer ist?
+    # Ich empfehle: anzeigen, aber mit Hinweis (sonst "verschwindet" es)
+    banForm = BanConfirmForm(available=available)
+    banAvailableCount = available.count() if banForm else 0
 
     return {
         "match": match,
@@ -98,7 +119,7 @@ def buildDraftContext(match, requestUser):
         "currentBanSlot": currentBanSlot,
         "banCount": BAN_COUNT,
         "banPending": banPending,
-
+        "banAvailableCount": banAvailableCount,
         "bansLeftToRight": bansLeftToRight,
         "bansRightToLeft": bansRightToLeft,
         "bansLeftToRightPending": bansLeftToRightPending if isHost else [],

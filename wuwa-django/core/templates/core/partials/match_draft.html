@@ -1,3 +1,10 @@
+{% if userSide %}
+  <p><small>DEBUG: userSide={{ userSide }} | isHost={{ isHost }} | banPhaseDone={{ banPhaseDone }} | currentBanSlot={{ currentBanSlot }} | banCount={{ banCount }}</small></p>
+{% else %}
+  <p><small>DEBUG: userSide=None | isHost={{ isHost }} | banPhaseDone={{ banPhaseDone }} | currentBanSlot={{ currentBanSlot }} | banCount={{ banCount }}</small></p>
+{% endif %}
+
+
 <h3>Pick/Ban</h3>
 
 <p>
@@ -73,6 +80,10 @@
 
 {% if banForm %}
   <h4>Select your ban for slot {{ currentBanSlot }}</h4>
+
+  {% if banAvailableCount == 0 %}
+    <p><b>keine Resonatoren verfügbar.</b></p>
+
   {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
   <form method="post" action="{% url 'matchConfirmBans' match.id %}">
     {% csrf_token %}
