@@ -138,32 +138,19 @@ def buildDraftContext(match, requestUser) -> dict:
     banAvailableCount = 0
     if isPlayerInMatch and (not banPhaseDone) and currentBanSlot <= BAN_COUNT:
         usedBanIds = set(
-		MatchDraftAction.objects.filter(
-			match=match,
-			action_type=DraftActionType.BAN,
-			acting_side=userSide,
-			).values_list("resonator_id", flat=True)
-		)
-	if allowReselectAction is not None:
-		usedBanIds.discard(allowReselectAction.resonator_id)
-		
-	available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
-    banForm = BanConfirmForm(available=available)
-    banAvailableCount = available.count()
+            MatchDraftAction.objects.filter(
+                match=match,
+                action_type=DraftActionType.BAN,
+                acting_side=userSide,
+            ).values_list("resonator_id", flat=True)
+        )
 
-    # Picks bleiben erstmal wie gehabt (Template erwartet die Variablen)
-    picksLeft = (
-        MatchDraftAction.objects.select_related("resonator")
-        .filter(match=match, action_type=DraftActionType.PICK, acting_side=MatchSide.LEFT, target_side=MatchSide.LEFT)
-        .order_by("step_index")
-    )
-    picksRight = (
-        MatchDraftAction.objects.select_related("resonator")
-        .filter(match=match, action_type=DraftActionType.PICK, acting_side=MatchSide.RIGHT, target_side=MatchSide.RIGHT)
-        .order_by("step_index")
-    )
+        if allowReselectAction is not None:
+            usedBanIds.discard(allowReselectAction.resonator_id)
 
-    currentPickSlot = _getCurrentPickSlot(match)
+        available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
+        banForm = BanConfirmForm(available=available)
+        banAvailableCount = available.count()
 
     # Locked picks (für Anzeige)
     picksLeft = (
@@ -189,6 +176,8 @@ def buildDraftContext(match, requestUser) -> dict:
         )
         .order_by("slot_index")
     )
+
+    currentPickSlot = _getCurrentPickSlot(match)
 
     # Pending picks – nur Host
     picksLeftPending = (
@@ -233,68 +222,59 @@ def buildDraftContext(match, requestUser) -> dict:
 
     pickForm = None
     pickAvailableCount = 0
-
     if isPlayerInMatch and banPhaseDone and (not pickPhaseDone) and currentPickSlot <= PICK_COUNT:
         usedPickIds = set(
-		MatchDraftAction.objects.filter(
-			match=match,
-			action_type=DraftActionType.PICK,
-			acting_side=userSide,
-		).values_list("resonator_id", flat=True)
-	)
-	if allowReselectPick is not None:
-		usedPickIds.discard(allowReselectPick.resonator_id)
-	bannedAgainstMe = set(
-		MatchDraftAction.objects.filter(
-			match=match,
-			action_type=DraftActionType.BAN,
-			target_side=userSide,
-			is_locked=True,
-		).values_list("resonator_id", flat=True)
-	)
-	available = (
-		Resonator.objects.filter(is_enabled=True).exclude(id__in=usedPickIds).exclude(id__in=bannedAgainstMe)
-	)
+            MatchDraftAction.objects.filter(
+                match=match,
+                action_type=DraftActionType.PICK,
+                acting_side=userSide,
+            ).values_list("resonator_id", flat=True)
+        )
 
-	pickForm = PickConfirmForm(available=available)
+        if allowReselectPick is not None:
+            usedPickIds.discard(allowReselectPick.resonator_id)
+
+        bannedAgainstMe = set(
+            MatchDraftAction.objects.filter(
+                match=match,
+                action_type=DraftActionType.BAN,
+                target_side=userSide,
+                is_locked=True,
+            ).values_list("resonator_id", flat=True)
+        )
+
+        available = (
+            Resonator.objects.filter(is_enabled=True)
+            .exclude(id__in=usedPickIds)
+            .exclude(id__in=bannedAgainstMe)
+        )
+
+        pickForm = PickConfirmForm(available=available)
         pickAvailableCount = available.count()
-
 
     return {
         "match": match,
         "isHost": isHost,
         "userSide": userSide,
         "isPlayerInMatch": isPlayerInMatch,
-
         "banPhaseDone": banPhaseDone,
         "pickPhaseDone": pickPhaseDone,
-
         "currentBanSlot": currentBanSlot,
         "banCount": BAN_COUNT,
-
         "banPending": banPending,
         "banForm": banForm,
         "banAvailableCount": banAvailableCount,
-
         "bansLeftToRight": bansLeftToRight,
         "bansRightToLeft": bansRightToLeft,
-
         "bansLeftToRightPending": bansLeftToRightPending if isHost else [],
         "bansRightToLeftPending": bansRightToLeftPending if isHost else [],
-
         "picksLeft": picksLeft,
         "picksRight": picksRight,
-
         "currentPickSlot": currentPickSlot,
         "pickCount": PICK_COUNT,
         "pickPending": pickPending,
         "pickForm": pickForm,
         "pickAvailableCount": pickAvailableCount,
-
-        "picksLeft": picksLeft,
-        "picksRight": picksRight,
         "picksLeftPending": picksLeftPending if isHost else [],
         "picksRightPending": picksRightPending if isHost else [],
-
     }
-
