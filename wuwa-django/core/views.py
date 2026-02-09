@@ -10,7 +10,7 @@ from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSi
 from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
 from .permissions import requireRole, requireLogin
 from .ws import broadcastDraftUpdate
-from .draft import _getCurrentBanSlot, _getUserSide, BAN_COUNT, buildDraftContext
+from .draft import _getCurrentBanSlot, _getCurrentPickSlot, BAN_COUNT, PICK_COUNT
 
 def home(request):
     return render(request, "core/home.html")
@@ -480,47 +480,101 @@ def matchConfirmPicks(request, matchId: int):
     if request.method != "POST":
         return redirect("matchDetail", matchId=matchId)
 
-    match = get_object_or_404(Match, id=matchId)
+    match = Match.objects.select_for_update().get(id=matchId)
+
     userSide = _getUserSide(request.user, match)
     if userSide is None:
         return HttpResponseForbidden("Forbidden")
 
-    # Nur wenn beide Bans confirmed
+    # Pick-Phase erst nach Ban-Phase
     if not (match.left_bans_confirmed and match.right_bans_confirmed):
         return redirect("matchDetail", matchId=matchId)
 
-    # Schon bestätigt?
-    if (userSide == MatchSide.LEFT and match.left_picks_confirmed) or (userSide == MatchSide.RIGHT and match.right_picks_confirmed):
+    # Pick-Phase fertig?
+    if match.left_picks_confirmed and match.right_picks_confirmed:
         return redirect("matchDetail", matchId=matchId)
 
-    available = getPickAvailableForSide(match, userSide)
+    currentSlot = _getCurrentPickSlot(match)
+    if currentSlot > PICK_COUNT:
+        match.left_picks_confirmed = True
+        match.right_picks_confirmed = True
+        match.save()
+        broadcastDraftUpdate(match.id)
+        return redirect("matchDetail", matchId=matchId)
+
+    # used: alles im match (ban+pick)
+    usedIds = set(
+        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+    )
+
+    # allow reselect own pending pick in this slot
+    existing = MatchDraftAction.objects.filter(
+        match=match,
+        action_type=DraftActionType.PICK,
+        acting_side=userSide,
+        slot_index=currentSlot,
+        is_locked=False,
+    ).first()
+    if existing is not None:
+        usedIds.discard(existing.resonator_id)
+
+    # Resonatoren, die gegen mich gelockt gebannt wurden, darf ich nicht picken
+    bannedAgainstMe = set(
+        MatchDraftAction.objects.filter(
+            match=match,
+            action_type=DraftActionType.BAN,
+            target_side=userSide,
+            is_locked=True,
+        ).values_list("resonator_id", flat=True)
+    )
+
+    available = (
+        Resonator.objects.filter(is_enabled=True)
+        .exclude(id__in=usedIds)
+        .exclude(id__in=bannedAgainstMe)
+    )
 
     form = PickConfirmForm(request.POST, available=available)
     if not form.is_valid():
         return redirect("matchDetail", matchId=matchId)
 
-    selected = form.cleaned_data["picks"]
+    selectedRes = form.cleaned_data["pick"]
 
-    # Alte Picks dieser Side löschen, falls re-submit erlaubt
-    MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.PICK, acting_side=userSide).delete()
+    stepIndex = 3000 + (currentSlot * 10) + (1 if userSide == MatchSide.LEFT else 2)
 
-    for idx, res in enumerate(selected, start=1):
-        MatchDraftAction.objects.create(
-            match=match,
-            step_index=3000 + idx if userSide == MatchSide.LEFT else 4000 + idx,
-            action_type=DraftActionType.PICK,
-            acting_side=userSide,
-            target_side=userSide,
-            resonator=res,
-        )
+    MatchDraftAction.objects.update_or_create(
+        match=match,
+        action_type=DraftActionType.PICK,
+        slot_index=currentSlot,
+        acting_side=userSide,
+        defaults={
+            "target_side": userSide,
+            "resonator": selectedRes,
+            "step_index": stepIndex,
+            "is_locked": False,
+        },
+    )
 
-    if userSide == MatchSide.LEFT:
-        match.left_picks_confirmed = True
-    else:
-        match.right_picks_confirmed = True
-    match.save()
+    slotActions = MatchDraftAction.objects.filter(
+        match=match,
+        action_type=DraftActionType.PICK,
+        slot_index=currentSlot,
+    )
+
+    hasLeft = slotActions.filter(acting_side=MatchSide.LEFT).exists()
+    hasRight = slotActions.filter(acting_side=MatchSide.RIGHT).exists()
+
+    if hasLeft and hasRight:
+        slotActions.update(is_locked=True)
+
+        if currentSlot >= PICK_COUNT:
+            match.left_picks_confirmed = True
+            match.right_picks_confirmed = True
+            match.save()
+
     broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
+
 
 
 @transaction.atomic

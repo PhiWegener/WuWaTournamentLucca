@@ -56,19 +56,21 @@ class BanConfirmForm(forms.Form):
         return ban
 
 class PickConfirmForm(forms.Form):
-    picks = forms.ModelMultipleChoiceField(
+    pick = forms.ModelChoiceField(
         queryset=Resonator.objects.none(),
-        widget=forms.CheckboxSelectMultiple,
+        widget=forms.Select(),
+        empty_label="— bitte wählen —",
+        label="Pick",
     )
 
     def __init__(self, *args, **kwargs):
         available = kwargs.pop("available", None)
         super().__init__(*args, **kwargs)
         if available is not None:
-            self.fields["picks"].queryset = available
+            self.fields["pick"].queryset = available
 
-    def clean_picks(self):
-        picks = self.cleaned_data["picks"]
-        if len(picks) != 3:
-            raise forms.ValidationError("Please select exactly 3 picks.")
-        return picks
+    def clean_pick(self):
+        pick = self.cleaned_data["pick"]
+        if pick is None:
+            raise forms.ValidationError("Bitte einen Pick auswählen.")
+        return pick
