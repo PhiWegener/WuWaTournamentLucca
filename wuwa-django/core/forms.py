@@ -36,22 +36,24 @@ class DraftActionForm(forms.Form):
             self.fields["resonator"].queryset = availableResonators
 
 class BanConfirmForm(forms.Form):
-    bans = forms.ModelChoiceField(
+    ban = forms.ModelChoiceField(
         queryset=Resonator.objects.none(),
-        widget=forms.CheckboxSelectMultiple,
+        widget=forms.Select(),
+        empty_label="-- bitte wählen --",
+        label="Ban",
     )
 
     def __init__(self, *args, **kwargs):
         available = kwargs.pop("available", None)
         super().__init__(*args, **kwargs)
         if available is not None:
-            self.fields["bans"].queryset = available
+            self.fields["ban"].queryset = available
         
-    def clean_bans(self):
-        bans = self.cleaned_data["bans"]
-        if len(bans) != 3:
-            raise forms.ValidationError("Please select exactly 3 bans.")
-        return bans
+    def clean_ban(self):
+        ban = self.cleaned_data["ban"]
+        if ban is None:
+            raise forms.ValidationError("Bitte einen Ban auswählen")
+        return ban
 
 class PickConfirmForm(forms.Form):
     picks = forms.ModelMultipleChoiceField(
