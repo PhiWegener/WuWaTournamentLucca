@@ -146,7 +146,7 @@ def buildDraftContext(match, requestUser) -> dict:
 	)
 	if allowReselectAction is not None:
 		usedBanIds.discard(allowReselectAction.resonator_id)
-	available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
+		available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
         banForm = BanConfirmForm(available=available)
         banAvailableCount = available.count()
 
