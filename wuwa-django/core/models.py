@@ -112,6 +112,8 @@ class MatchDraftAction(models.Model):
     action_type = models.CharField(max_length=10, choices=DraftActionType.choices)
     acting_side = models.CharField(max_length=5, choices=MatchSide.choices)
     target_side = models.CharField(max_length=5, choices=MatchSide.choices)
+    slot_index = models.PositiveIntegerField(default=1)
+    is_locked = models.BooleanField(default=False)
 
     resonator = models.ForeignKey(Resonator, on_delete=models.CASCADE, related_name="draft_actions")
 

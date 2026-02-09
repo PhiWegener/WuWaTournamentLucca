@@ -1,0 +1,88 @@
+<h3>Pick/Ban</h3>
+
+<p>
+  Phase:
+  {% if not banPhaseDone %}BAN{% elif not pickPhaseDone %}PICK{% else %}DONE{% endif %}
+</p>
+
+{% if isHost %}
+  <form method="post" action="{% url 'matchDraftReset' match.id %}">
+    {% csrf_token %}
+    <button type="submit">Reset Draft</button>
+  </form>
+{% endif %}
+
+<hr>
+
+<h4>Bans LEFT → RIGHT</h4>
+<ul>
+  {% for a in bansLeftToRight %}
+    <li>Ban {{ a.slot_index }}: {{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<h4>Bans RIGHT → LEFT</h4>
+<ul>
+  {% for a in bansRightToLeft %}
+    <li>Ban {{ a.slot_index }}: {{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<hr>
+
+<h4>Picks LEFT</h4>
+<ul>
+  {% for a in picksLeft %}
+    <li>{{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<h4>Picks RIGHT</h4>
+<ul>
+  {% for a in picksRight %}
+    <li>{{ a.resonator.name }}</li>
+  {% empty %}
+    <li>None</li>
+  {% endfor %}
+</ul>
+
+<hr>
+
+{% if banPhaseDone %}
+  <p><b>Ban phase complete.</b></p>
+{% else %}
+  <p><b>Ban slot:</b> {{ currentBanSlot }} / {{ banCount }}</p>
+{% endif %}
+
+{% if banPending %}
+  <p>
+    You selected (pending): <b>{{ banPending.resonator.name }}</b><br>
+    Waiting for opponent to confirm this slot…
+  </p>
+{% endif %}
+
+{% if banForm %}
+  <h4>Select your ban for slot {{ currentBanSlot }}</h4>
+  {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
+  <form method="post" action="{% url 'matchConfirmBans' match.id %}">
+    {% csrf_token %}
+    {{ banForm.as_p }}
+    <button type="submit">Confirm ban</button>
+  </form>
+{% endif %}
+
+{% if pickForm %}
+  <h4>Select 3 picks (mirror picks allowed)</h4>
+  {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
+  <form method="post" action="{% url 'matchConfirmPicks' match.id %}">
+    {% csrf_token %}
+    {{ pickForm.as_p }}
+    <button type="submit">Confirm picks</button>
+  </form>
+{% endif %}

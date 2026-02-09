@@ -8,7 +8,6 @@
   </p>
 {% endif %}
 
-
 <p>
   {% if match.tournament %}[{{ match.tournament.name }}]{% endif %}
   {{ match.player_left.name }} vs {{ match.player_right.name }}
@@ -45,81 +44,38 @@
 
 <hr>
 
-<h3>Pick/Ban</h3>
+<div id="draftRoot">
+  {% include "core/partials/match_draft.html" %}
+</div>
 
-<p>
-  Phase:
-  {% if not banPhaseDone %}BAN{% elif not pickPhaseDone %}PICK{% else %}DONE{% endif %}
-</p>
+<script>
+(function () {
+  const matchId = {{ match.id }};
+  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = wsProtocol + "://" + window.location.host + "/ws/match/" + matchId + "/draft/";
 
-{% if isHost %}
-  <form method="post" action="{% url 'matchDraftReset' match.id %}">
-    {% csrf_token %}
-    <button type="submit">Reset Draft</button>
-  </form>
-{% endif %}
+  let socket = null;
 
-<hr>
+  function connect() {
+    socket = new WebSocket(wsUrl);
 
-<h4>Bans LEFT → RIGHT</h4>
-<ul>
-  {% for a in bansLeftToRight %}
-    <li>{{ a.resonator.name }}</li>
-  {% empty %}
-    <li>None</li>
-  {% endfor %}
-</ul>
+    socket.onmessage = function (event) {
+      const data = JSON.parse(event.data);
+      if (data.type === "draftState" && data.html) {
+        const root = document.getElementById("draftRoot");
+        if (root) root.innerHTML = data.html;
+      }
+    };
 
-<h4>Bans RIGHT → LEFT</h4>
-<ul>
-  {% for a in bansRightToLeft %}
-    <li>{{ a.resonator.name }}</li>
-  {% empty %}
-    <li>None</li>
-  {% endfor %}
-</ul>
+    socket.onclose = function () {
+      // Simple reconnect (optional)
+      setTimeout(connect, 1500);
+    };
+  }
 
-<hr>
-
-<h4>Picks LEFT</h4>
-<ul>
-  {% for a in picksLeft %}
-    <li>{{ a.resonator.name }}</li>
-  {% empty %}
-    <li>None</li>
-  {% endfor %}
-</ul>
-
-<h4>Picks RIGHT</h4>
-<ul>
-  {% for a in picksRight %}
-    <li>{{ a.resonator.name }}</li>
-  {% empty %}
-    <li>None</li>
-  {% endfor %}
-</ul>
-
-<hr>
-
-{% if banForm %}
-  <h4>Select 3 bans against opponent</h4>
-  <p>You are: <b>{{ userSide }}</b></p>
-  <form method="post" action="{% url 'matchConfirmBans' match.id %}">
-    {% csrf_token %}
-    {{ banForm.as_p }}
-    <button type="submit">Confirm bans</button>
-  </form>
-{% endif %}
-
-{% if pickForm %}
-  <h4>Select 3 picks (mirror picks allowed)</h4>
-  <p>You are: <b>{{ userSide }}</b></p>
-  <form method="post" action="{% url 'matchConfirmPicks' match.id %}">
-    {% csrf_token %}
-    {{ pickForm.as_p }}
-    <button type="submit">Confirm picks</button>
-  </form>
-{% endif %}
+  connect();
+})();
+</script>
 
 <hr>
 

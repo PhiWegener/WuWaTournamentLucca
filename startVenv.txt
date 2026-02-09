@@ -13,3 +13,10 @@ uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload
 
 
 [API] 1 einziger endpoint: /api/tournaments/1/matches/
+
+
+
+
+laptop/server zuhause: 
+cd dev/WuWaTournamentLucca/
+source .venv/bin/activate

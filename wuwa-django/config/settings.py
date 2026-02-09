@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'rest_framework',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -71,6 +72,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -101,6 +107,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ASGI_APPLICATION = "wuwaTournament.asgi.application"
+
+# Für Dev reicht InMemoryChannelLayer, Prod: Redis
+CHANNEL_LAYERS = {
+    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/

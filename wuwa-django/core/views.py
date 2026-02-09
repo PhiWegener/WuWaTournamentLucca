@@ -9,6 +9,49 @@ from django.db import transaction
 from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSide, MatchDraftAction, Resonator, DraftActionType
 from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
 from .permissions import requireRole, requireLogin
+from .ws import broadcastDraftUpdate
+
+
+def buildDraftContext(match, requestUser):
+
+    isHost = requestUser.is_authenticated and requestUser.role in (
+        UserRole.ADMIN, UserRole.COMMENTATOR
+    )
+
+    userSide = _getUserSide(requestUser, match)
+
+    actions = MatchDraftAction.objects.select_related("resonator")\
+        .filter(match=match)\
+        .order_by("step_index")
+
+    banPhaseDone = match.left_bans_confirmed and match.right_bans_confirmed
+    pickPhaseDone = match.left_picks_confirmed and match.right_picks_confirmed
+
+    bansLeftToRight = MatchDraftAction.objects.select_related("resonator").filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=MatchSide.LEFT,
+        target_side=MatchSide.RIGHT,
+    ).order_by("step_index")
+
+    bansRightToLeft = MatchDraftAction.objects.select_related("resonator").filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=MatchSide.RIGHT,
+        target_side=MatchSide.LEFT,
+    ).order_by("step_index")
+
+    return {
+        "match": match,
+        "isHost": isHost,
+        "userSide": userSide,
+        "actions": actions,
+        "banPhaseDone": banPhaseDone,
+        "pickPhaseDone": pickPhaseDone,
+        "bansLeftToRight": bansLeftToRight,
+        "bansRightToLeft": bansRightToLeft,
+    }
+
 
 
 def home(request):
@@ -261,111 +304,8 @@ def _getUserMatchSide(user, match) -> str | None:
     return None
 
 def matchDetail(request, matchId: int):
-    match = get_object_or_404(
-        Match.objects.select_related("player_left", "player_right", "boss", "tournament", "winner_player"),
-        id=matchId,
-    )
-
-    isHost = request.user.is_authenticated and request.user.role in (UserRole.ADMIN, UserRole.COMMENTATOR)
-    userSide = _getUserSide(request.user, match)
-    isPlayerInMatch = userSide is not None
-
-    if not (isHost or isPlayerInMatch):
-        return HttpResponseForbidden("Forbidden")
-
-    actions = MatchDraftAction.objects.select_related("resonator").filter(match=match).order_by("step_index")
-
-    banPhaseDone = match.left_bans_confirmed and match.right_bans_confirmed
-    pickPhaseDone = match.left_picks_confirmed and match.right_picks_confirmed
-
-    banForm = None
-    pickForm = None
-
-    myPicks = MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.PICK, acting_side=userSide).select_related("resonator")
-    oppSide = MatchSide.RIGHT if userSide == MatchSide.LEFT else MatchSide.LEFT
-    oppPicks = MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.PICK, acting_side=oppSide).select_related("resonator")
-
-    bansAgainstMe = MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.BAN, target_side=userSide).select_related("resonator")
-    bansAgainstOpp = MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.BAN, target_side=oppSide).select_related("resonator")
-
-    if isPlayerInMatch:
-        if not banPhaseDone:
-            # Spieler darf bannen, wenn er noch nicht confirmed hat
-            alreadyConfirmed = match.left_bans_confirmed if userSide == MatchSide.LEFT else match.right_bans_confirmed
-            if not alreadyConfirmed:
-                banForm = BanConfirmForm(available=Resonator.objects.filter(is_enabled=True))
-        else:
-            alreadyConfirmed = match.left_picks_confirmed if userSide == MatchSide.LEFT else match.right_picks_confirmed
-            if not alreadyConfirmed and not pickPhaseDone:
-                pickForm = PickConfirmForm(available=getPickAvailableForSide(match, userSide))
-
-    timeForm = MatchTimeSubmitForm()  # wie du es schon hast
-
-
-    bansLeftToRight = (
-        MatchDraftAction.objects
-        .select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.BAN,
-            acting_side=MatchSide.LEFT,
-            target_side=MatchSide.RIGHT,
-        )
-        .order_by("step_index")
-    )
-
-    bansRightToLeft = (
-        MatchDraftAction.objects
-        .select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.BAN,
-            acting_side=MatchSide.RIGHT,
-            target_side=MatchSide.LEFT,
-        )
-        .order_by("step_index")
-    )
-
-    picksLeft = (
-        MatchDraftAction.objects
-        .select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.PICK,
-            acting_side=MatchSide.LEFT,
-            target_side=MatchSide.LEFT,
-        )
-        .order_by("step_index")
-    )
-
-    picksRight = (
-        MatchDraftAction.objects
-        .select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.PICK,
-            acting_side=MatchSide.RIGHT,
-            target_side=MatchSide.RIGHT,
-        )
-        .order_by("step_index")
-    )
-
-    return render(request, "core/match_detail.html", {
-        "match": match,
-        "isHost": isHost,
-        "userSide": userSide,
-        "actions": actions,
-        "banPhaseDone": banPhaseDone,
-        "pickPhaseDone": pickPhaseDone,
-        "banForm": banForm,
-        "pickForm": pickForm,
-        "timeForm": timeForm,
-        "bansLeftToRight": bansLeftToRight,
-        "bansRightToLeft": bansRightToLeft,
-        "picksLeft": picksLeft,
-        "picksRight": picksRight,
-    })
-
+    context = buildDraftContext(match, request.user)
+    return render(request, "core/match_detail.html", context)
 
 @requireLogin
 def matchDraftAction(request, matchId: int):
@@ -407,7 +347,7 @@ def matchDraftAction(request, matchId: int):
         acting_side=actingSide,
         resonator=resonator,
     )
-
+    broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
 
 @requireRole(UserRole.PLAYER)
@@ -496,53 +436,86 @@ def matchConfirmBans(request, matchId: int):
     if request.method != "POST":
         return redirect("matchDetail", matchId=matchId)
 
-    match = get_object_or_404(Match, id=matchId)
+    match = Match.objects.select_for_update().get(id=matchId)
+
     userSide = _getUserSide(request.user, match)
     if userSide is None:
         return HttpResponseForbidden("Forbidden")
 
-    # Nur in BAN-Phase erlauben
+    # Ban-Phase fertig?
     if match.left_bans_confirmed and match.right_bans_confirmed:
         return redirect("matchDetail", matchId=matchId)
 
-    # Schon bestätigt? Dann nicht nochmal.
-    if (userSide == MatchSide.LEFT and match.left_bans_confirmed) or (userSide == MatchSide.RIGHT and match.right_bans_confirmed):
+    currentSlot = _getCurrentBanSlot(match)
+    if currentSlot > BAN_COUNT:
+        match.left_bans_confirmed = True
+        match.right_bans_confirmed = True
+        match.save()
+        broadcastDraftUpdate(match.id)
         return redirect("matchDetail", matchId=matchId)
 
-    # Available: alle enabled Resonatoren (bannen darf man alles, auch was später selber gepickt werden könnte)
-    available = Resonator.objects.filter(is_enabled=True)
+    # Nur Resonatoren, die im Match noch nicht verwendet wurden (Ban oder Pick)
+    usedIds = set(
+        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+    )
+
+    # Wenn ich im aktuellen Slot schon einen pending Ban habe, darf ich den "re-choosen":
+    existing = MatchDraftAction.objects.filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=userSide,
+        slot_index=currentSlot,
+        is_locked=False,
+    ).first()
+    if existing is not None:
+        usedIds.discard(existing.resonator_id)
+
+    available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedIds)
 
     form = BanConfirmForm(request.POST, available=available)
     if not form.is_valid():
         return redirect("matchDetail", matchId=matchId)
 
-    selected = form.cleaned_data["bans"]
-
-    # Alte Bans dieser Side entfernen (falls neu submitten erlaubt sein soll)
-    MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.BAN, acting_side=userSide).delete()
+    selectedRes = form.cleaned_data["ban"]
 
     targetSide = MatchSide.RIGHT if userSide == MatchSide.LEFT else MatchSide.LEFT
 
-    # Neue Bans schreiben
-    for idx, res in enumerate(selected, start=1):
-        MatchDraftAction.objects.create(
-            match=match,
-            step_index=1000 + idx if userSide == MatchSide.LEFT else 2000 + idx,  # nur zur stabilen Sortierung
-            action_type=DraftActionType.BAN,
-            acting_side=userSide,
-            target_side=targetSide,
-            resonator=res,
-        )
+    # Upsert pro (match, BAN, slot, side)
+    stepIndex = 1000 + (currentSlot * 10) + (1 if userSide == MatchSide.LEFT else 2)
 
-    # Confirm-Flag setzen
-    if userSide == MatchSide.LEFT:
-        match.left_bans_confirmed = True
-    else:
-        match.right_bans_confirmed = True
-    match.save()
+    MatchDraftAction.objects.update_or_create(
+        match=match,
+        action_type=DraftActionType.BAN,
+        slot_index=currentSlot,
+        acting_side=userSide,
+        defaults={
+            "target_side": targetSide,
+            "resonator": selectedRes,
+            "step_index": stepIndex,
+            "is_locked": False,
+        },
+    )
 
+    # Wenn beide Seiten in diesem Slot einen Ban gesetzt haben -> lock beide
+    slotActions = MatchDraftAction.objects.filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        slot_index=currentSlot,
+    )
+
+    hasLeft = slotActions.filter(acting_side=MatchSide.LEFT).exists()
+    hasRight = slotActions.filter(acting_side=MatchSide.RIGHT).exists()
+
+    if hasLeft and hasRight:
+        slotActions.update(is_locked=True)
+
+        if currentSlot >= BAN_COUNT:
+            match.left_bans_confirmed = True
+            match.right_bans_confirmed = True
+            match.save()
+
+    broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
-
 
 @transaction.atomic
 def matchConfirmPicks(request, matchId: int):
@@ -588,7 +561,7 @@ def matchConfirmPicks(request, matchId: int):
     else:
         match.right_picks_confirmed = True
     match.save()
-
+    broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
 
 

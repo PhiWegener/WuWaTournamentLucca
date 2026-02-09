@@ -36,7 +36,7 @@ class DraftActionForm(forms.Form):
             self.fields["resonator"].queryset = availableResonators
 
 class BanConfirmForm(forms.Form):
-    bans = forms.ModelMultipleChoiceField(
+    bans = forms.ModelChoiceField(
         queryset=Resonator.objects.none(),
         widget=forms.CheckboxSelectMultiple,
     )
