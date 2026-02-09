@@ -85,11 +85,11 @@ def buildDraftContext(match, requestUser):
 
     banForm = None
 
-if isPlayerInMatch and not banPhaseDone and currentBanSlot <= BAN_COUNT:
+    if isPlayerInMatch and not banPhaseDone and currentBanSlot <= BAN_COUNT:
     # used resonators (ban+pick) im match
-    usedIds = set(
-        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
-    )
+        usedIds = set(
+            MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+        )
 
     # allow re-choose own pending for this slot
     existing = MatchDraftAction.objects.filter(
