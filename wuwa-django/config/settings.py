@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'core',
     'rest_framework',
     'rest_framework.authtoken',
-    'channels'
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -106,7 +106,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-ASGI_APPLICATION = "wuwaTournament.asgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 # Für Dev reicht InMemoryChannelLayer, Prod: Redis
 CHANNEL_LAYERS = {
