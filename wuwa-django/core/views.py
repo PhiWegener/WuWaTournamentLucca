@@ -252,16 +252,25 @@ def leaderboards(request):
         "bossLeaderboards": bossLeaderboards,
     })
 
-def _getUserMatchSide(user, match) -> str | None:
-    if not user.is_authenticated or user.player is None:
-        return None
-    if user.player_id == match.player_left_id:
-        return MatchSide.LEFT
-    if user.player_id == match.player_right_id:
-        return MatchSide.RIGHT
-    return None
+def matchDetail(request, matchId: int):
+    match = get_object_or_404(
+        Match.objects.select_related("player_left", "player_right", "boss", "tournament", "winner_player"),
+        id=matchId,
+    )
 
-def matchDetail(request, match):
+    isHost = request.user.is_authenticated and request.user.role in (UserRole.ADMIN, UserRole.COMMENTATOR)
+    userSide = None
+    if request.user.is_authenticated and getattr(request.user, "player_id", None) is not None:
+        if request.user.player_id == match.player_left_id:
+            userSide = "LEFT"
+        elif request.user.player_id == match.player_right_id:
+            userSide = "RIGHT"
+
+    isPlayerInMatch = userSide is not None
+
+    if not (isHost or isPlayerInMatch):
+        return HttpResponseForbidden("Forbidden")
+
     context = buildDraftContext(match, request.user)
     return render(request, "core/match_detail.html", context)
 
@@ -273,7 +282,7 @@ def matchDraftAction(request, matchId: int):
     match = get_object_or_404(Match, id=matchId)
 
     isHost = request.user.role in (UserRole.ADMIN, UserRole.COMMENTATOR)
-    userSide = _getUserMatchSide(request.user, match)
+    userSide = _getUserSide(request.user, match)
     isPlayerInMatch = userSide is not None
 
     if not (isHost or isPlayerInMatch):
@@ -316,7 +325,7 @@ def matchSubmitTime(request, matchId: int):
     match = get_object_or_404(Match, id=matchId)
 
     # Muss im Match sein
-    userSide = _getUserMatchSide(request.user, match)
+    userSide = _getUserSide(request.user, match)
     if userSide is None:
         return HttpResponseForbidden("Forbidden")
 
