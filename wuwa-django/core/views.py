@@ -10,49 +10,7 @@ from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSi
 from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
 from .permissions import requireRole, requireLogin
 from .ws import broadcastDraftUpdate
-
-
-def buildDraftContext(match, requestUser):
-
-    isHost = requestUser.is_authenticated and requestUser.role in (
-        UserRole.ADMIN, UserRole.COMMENTATOR
-    )
-
-    userSide = _getUserSide(requestUser, match)
-
-    actions = MatchDraftAction.objects.select_related("resonator")\
-        .filter(match=match)\
-        .order_by("step_index")
-
-    banPhaseDone = match.left_bans_confirmed and match.right_bans_confirmed
-    pickPhaseDone = match.left_picks_confirmed and match.right_picks_confirmed
-
-    bansLeftToRight = MatchDraftAction.objects.select_related("resonator").filter(
-        match=match,
-        action_type=DraftActionType.BAN,
-        acting_side=MatchSide.LEFT,
-        target_side=MatchSide.RIGHT,
-    ).order_by("step_index")
-
-    bansRightToLeft = MatchDraftAction.objects.select_related("resonator").filter(
-        match=match,
-        action_type=DraftActionType.BAN,
-        acting_side=MatchSide.RIGHT,
-        target_side=MatchSide.LEFT,
-    ).order_by("step_index")
-
-    return {
-        "match": match,
-        "isHost": isHost,
-        "userSide": userSide,
-        "actions": actions,
-        "banPhaseDone": banPhaseDone,
-        "pickPhaseDone": pickPhaseDone,
-        "bansLeftToRight": bansLeftToRight,
-        "bansRightToLeft": bansRightToLeft,
-    }
-
-
+from .draft import _getCurrentBanSlot, _getUserSide, BAN_COUNT
 
 def home(request):
     return render(request, "core/home.html")
@@ -420,15 +378,6 @@ def getPickAvailableForSide(match, side: str):
         .filter(is_enabled=True)
         .exclude(id__in=bannedAgainstMe)
     )
-
-def _getUserSide(user, match):
-    if not user.is_authenticated or user.player is None:
-        return None
-    if user.player_id == match.player_left_id:
-        return MatchSide.LEFT
-    if user.player_id == match.player_right_id:
-        return MatchSide.RIGHT
-    return None
 
 
 @transaction.atomic

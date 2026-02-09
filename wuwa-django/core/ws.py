@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth import get_user_model
 
 from .models import Match
-from .views import buildDraftContext
+from .draft import buildDraftContext
 
 
 def broadcastDraftUpdate(matchId: int):

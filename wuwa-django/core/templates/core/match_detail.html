@@ -44,13 +44,15 @@
 
 <hr>
 
-<div id="draftRoot">
+<div id="draftRoot", data-match-id="{{match.id}}">
   {% include "core/partials/match_draft.html" %}
 </div>
 
 <script>
 (function () {
-  const matchId = {{ match.id }};
+  const root = document.getElementById("draftRoot");
+  const matchId = root.dataset.matchId;
+
   const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
   const wsUrl = wsProtocol + "://" + window.location.host + "/ws/match/" + matchId + "/draft/";
 
@@ -61,9 +63,9 @@
 
     socket.onmessage = function (event) {
       const data = JSON.parse(event.data);
+
       if (data.type === "draftState" && data.html) {
-        const root = document.getElementById("draftRoot");
-        if (root) root.innerHTML = data.html;
+        root.innerHTML = data.html;
       }
     };
 
