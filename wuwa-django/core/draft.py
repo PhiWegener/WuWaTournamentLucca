@@ -142,13 +142,14 @@ def buildDraftContext(match, requestUser) -> dict:
 			match=match,
 			action_type=DraftActionType.BAN,
 			acting_side=userSide,
-		).values_list("resonator_id", flat=True)
-	)
+			).values_list("resonator_id", flat=True)
+		)
 	if allowReselectAction is not None:
 		usedBanIds.discard(allowReselectAction.resonator_id)
-		available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
-        banForm = BanConfirmForm(available=available)
-        banAvailableCount = available.count()
+		
+	available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
+    banForm = BanConfirmForm(available=available)
+    banAvailableCount = available.count()
 
     # Picks bleiben erstmal wie gehabt (Template erwartet die Variablen)
     picksLeft = (
