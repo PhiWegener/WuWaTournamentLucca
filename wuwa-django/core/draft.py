@@ -39,6 +39,9 @@ def buildDraftContext(match, requestUser):
     pickPhaseDone = match.left_picks_confirmed and match.right_picks_confirmed
 
     currentBanSlot = _getCurrentBanSlot(match)
+    banFilter = {"is_locked": True}
+    if isHost:
+        banFilter = {}
 
     # Nur locked Bans anzeigen (erst wenn beide confirmed haben)
     bansLeftToRight = (
@@ -48,9 +51,9 @@ def buildDraftContext(match, requestUser):
             action_type=DraftActionType.BAN,
             acting_side=MatchSide.LEFT,
             target_side=MatchSide.RIGHT,
-            is_locked=True,
+            **banFilter,
         )
-        .order_by("slot_index")
+        .order_by("slot_index", "step_index")
     )
 
     bansRightToLeft = (
@@ -60,7 +63,7 @@ def buildDraftContext(match, requestUser):
             action_type=DraftActionType.BAN,
             acting_side=MatchSide.RIGHT,
             target_side=MatchSide.LEFT,
-            is_locked=True,
+            **banFilter,
         )
         .order_by("slot_index")
     )

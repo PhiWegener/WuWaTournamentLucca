@@ -10,7 +10,7 @@ from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSi
 from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
 from .permissions import requireRole, requireLogin
 from .ws import broadcastDraftUpdate
-from .draft import _getCurrentBanSlot, _getUserSide, BAN_COUNT
+from .draft import _getCurrentBanSlot, _getUserSide, BAN_COUNT, buildDraftContext
 
 def home(request):
     return render(request, "core/home.html")

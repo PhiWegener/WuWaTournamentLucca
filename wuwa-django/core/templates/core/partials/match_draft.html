@@ -17,7 +17,10 @@
 <h4>Bans LEFT → RIGHT</h4>
 <ul>
   {% for a in bansLeftToRight %}
-    <li>Ban {{ a.slot_index }}: {{ a.resonator.name }}</li>
+    <li>
+      Ban {{ a.slot_index }}: {{ a.resonator.name }}
+      {% if not a.is_locked %}<em>(pending)</em>{% endif %}
+    </li>
   {% empty %}
     <li>None</li>
   {% endfor %}
@@ -27,6 +30,7 @@
 <ul>
   {% for a in bansRightToLeft %}
     <li>Ban {{ a.slot_index }}: {{ a.resonator.name }}</li>
+    {% if not a.is_locked %}<em>(pending)</em>{% endif %}
   {% empty %}
     <li>None</li>
   {% endfor %}
