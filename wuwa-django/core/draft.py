@@ -7,7 +7,7 @@ from .models import (
     Resonator,
     UserRole,
 )
-from .forms import BanConfirmForm
+from .forms import BanConfirmForm, PickConfirmForm
 
 
 BAN_COUNT = 3
