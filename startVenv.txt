@@ -20,3 +20,5 @@ uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload
 laptop/server zuhause: 
 cd dev/WuWaTournamentLucca/
 source .venv/bin/activate
+cd wuwa-django
+make run
