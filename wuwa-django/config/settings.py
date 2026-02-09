@@ -30,6 +30,7 @@ ALLOWED_HOSTS = ["192.168.2.128"]
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,7 +40,6 @@ INSTALLED_APPS = [
     'core',
     'rest_framework',
     'rest_framework.authtoken',
-    'channels',
 ]
 
 MIDDLEWARE = [
