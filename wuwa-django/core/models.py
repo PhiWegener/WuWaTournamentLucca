@@ -119,9 +119,19 @@ class MatchDraftAction(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = [("match", "step_index")]
-        ordering = ["step_index"]
+class Meta:
+    constraints = [
+        models.UniqueConstraint(
+            fields=["match", "step_index"],
+            name="uniq_matchdraftaction_match_step",
+        ),
+        models.UniqueConstraint(
+            fields=["match", "action_type", "slot_index", "acting_side"],
+            name="uniq_matchdraftaction_slot_per_side",
+        ),
+    ]
+    ordering = ["step_index"]
+
 
     def __str__(self) -> str:
         return f"{self.match} {self.action_type} {self.resonator} ({self.acting_side})"
