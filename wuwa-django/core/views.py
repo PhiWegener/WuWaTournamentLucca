@@ -262,7 +262,7 @@ def _getUserMatchSide(user, match) -> str | None:
     return None
 
 def matchDetail(request, matchId: int):
-    context = buildDraftContext(match, request.user)
+    context = buildDraftContext(matchId, request.user)
     return render(request, "core/match_detail.html", context)
 
 @requireLogin
