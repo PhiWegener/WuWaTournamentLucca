@@ -36,7 +36,7 @@ class MatchDraftConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.groupName, self.channel_name)
 
     async def draftUpdated(self, event):
-        await self.sendDraftState(self.scope["user"].id)
+        await self.send(text_data=json.dumps({"type": "refresh"}))
 
     async def sendDraftState(self, userId):
         payload = await self._buildPayload(userId)

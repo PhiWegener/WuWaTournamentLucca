@@ -3,8 +3,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.db.models import Prefetch
 from django.utils import timezone
 from django.db.models import Q
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponse
 from django.db import transaction
+from django.template.loader import render_to_string
 
 from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSide, MatchDraftAction, Resonator, DraftActionType
 from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
@@ -15,6 +16,23 @@ from .draft import _getCurrentBanSlot, _getCurrentPickSlot, BAN_COUNT, PICK_COUN
 def home(request):
     return render(request, "core/home.html")
 
+
+def matchDraftPartial(request, matchId: int):
+    match = get_object_or_404(
+        Match.objects.select_related("player_left", "player_right", "boss", "tournament", "winner_player"),
+        id=matchId,
+    )
+
+    # gleiche Permission-Logik wie matchDetail
+    isHost = request.user.is_authenticated and request.user.role in (UserRole.ADMIN, UserRole.COMMENTATOR)
+    userSide = _getUserSide(request.user, match)
+    isPlayerInMatch = userSide is not None
+    if not (isHost or isPlayerInMatch):
+        return HttpResponseForbidden("Forbidden")
+
+    context = buildDraftContext(match, request.user)
+    html = render_to_string("core/partials/match_draft.html", context, request=request)
+    return HttpResponse(html)
 
 def userLogin(request):
     if request.method == "POST":
@@ -503,8 +521,8 @@ def matchConfirmPicks(request, matchId: int):
         return redirect("matchDetail", matchId=matchId)
 
     # used: alles im match (ban+pick)
-    usedIds = set(
-        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+    usedPickIds = set(
+        MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.PICK,).values_list("resonator_id", flat=True)
     )
 
     # allow reselect own pending pick in this slot
@@ -530,7 +548,7 @@ def matchConfirmPicks(request, matchId: int):
 
     available = (
         Resonator.objects.filter(is_enabled=True)
-        .exclude(id__in=usedIds)
+        .exclude(id__in=usedPickIds)
         .exclude(id__in=bannedAgainstMe)
     )
 

@@ -56,22 +56,33 @@
   const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
   const wsUrl = wsProtocol + "://" + window.location.host + "/ws/match/" + matchId + "/draft/";
 
-  let socket = null;
+  async function refreshDraft() {
+    const resp = await fetch("/match/" + matchId + "/draft-partial/", { credentials: "same-origin" });
+    if (resp.ok) {
+      root.innerHTML = await resp.text();
+    }
+  }
 
   function connect() {
-    socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(wsUrl);
 
     socket.onmessage = function (event) {
       const data = JSON.parse(event.data);
-
-      if (data.type === "draftState" && data.html) {
-        root.innerHTML = data.html;
+      if (data.type === "refresh") {
+        refreshDraft();
       }
     };
 
+    socket.onopen = function () {
+      refreshDraft(); // initial einmal ziehen
+    };
+
     socket.onclose = function () {
-      // Simple reconnect (optional)
       setTimeout(connect, 1500);
+    };
+
+    socket.onerror = function () {
+      socket.close();
     };
   }
 

@@ -28,6 +28,7 @@ urlpatterns = [
     path("match/<int:matchId>/confirm-picks/", views.matchConfirmPicks, name="matchConfirmPicks"),
     path("match/<int:matchId>/draft-reset/", views.matchDraftReset, name="matchDraftReset"),
     path("match/<int:matchId>/submit-time/", views.matchSubmitTime, name="matchSubmitTime"),
+    path("match/<int:matchId>/draft-partial/", views.matchDraftPartial, name="matchDraftPartial"),
 
 
 
