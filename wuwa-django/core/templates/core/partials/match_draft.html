@@ -82,9 +82,10 @@
   <h4>Select your ban for slot {{ currentBanSlot }}</h4>
 
   {% if banAvailableCount == 0 %}
-    <p><b>keine Resonatoren verfügbar.</b></p>
+    <p><b>Keine Resonatoren verfügbar.</b></p>
+{% endif %}
 
-  {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
+{% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
   <form method="post" action="{% url 'matchConfirmBans' match.id %}">
     {% csrf_token %}
     {{ banForm.as_p }}
