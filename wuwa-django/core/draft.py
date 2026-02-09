@@ -137,7 +137,16 @@ def buildDraftContext(match, requestUser) -> dict:
     banForm = None
     banAvailableCount = 0
     if isPlayerInMatch and (not banPhaseDone) and currentBanSlot <= BAN_COUNT:
-        available = _getBanAvailable(match, allowReselectAction=allowReselectAction)
+        usedBanIds = set(
+		MatchDraftAction.objects.filter(
+			match=match,
+			action_type=DraftActionType.BAN,
+			acting_side=userSide,
+		).values_list("resonator_id", flat=True)
+	)
+	if allowReselectAction is not None:
+		usedBanIds.discard(allowReselectAction.resonator_id)
+	available = Resonator.objects.filter(is_enabled=True).exclude(id__in=usedBanIds)
         banForm = BanConfirmForm(available=available)
         banAvailableCount = available.count()
 
@@ -225,30 +234,28 @@ def buildDraftContext(match, requestUser) -> dict:
     pickAvailableCount = 0
 
     if isPlayerInMatch and banPhaseDone and (not pickPhaseDone) and currentPickSlot <= PICK_COUNT:
-        # “used” = alles, was schon gebannt/gepickt ist
-        usedIds = set(
-            MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
-        )
-        if allowReselectPick is not None:
-            usedIds.discard(allowReselectPick.resonator_id)
+        usedPickIds = set(
+		MatchDraftAction.objects.filter(
+			match=match,
+			action_type=DraftActionType.PICK,
+			acting_side=userSide,
+		).values_list("resonator_id", flat=True)
+	)
+	if allowReselectPick is not None:
+		usedPickIds.discard(allowReselectPick.resonator_id)
+	bannedAgainstMe = set(
+		MatchDraftAction.objects.filter(
+			match=match,
+			action_type=DraftActionType.BAN,
+			target_side=userSide,
+			is_locked=True,
+		).values_list("resonator_id", flat=True)
+	)
+	available = (
+		Resonator.objects.filter(is_enabled=True).exclude(id__in=usedPickIds).exclude(id__in=bannedAgainstMe)
+	)
 
-        # zusätzlich: Resonatoren, die gegen mich gebannt wurden, darf ich nicht picken
-        bannedAgainstMe = set(
-            MatchDraftAction.objects.filter(
-                match=match,
-                action_type=DraftActionType.BAN,
-                target_side=userSide,
-                is_locked=True,   # erst “finale” Bans blockieren
-            ).values_list("resonator_id", flat=True)
-        )
-
-        available = (
-            Resonator.objects.filter(is_enabled=True)
-            .exclude(id__in=usedIds)
-            .exclude(id__in=bannedAgainstMe)
-        )
-
-        pickForm = PickConfirmForm(available=available)
+	pickForm = PickConfirmForm(available=available)
         pickAvailableCount = available.count()
 
 

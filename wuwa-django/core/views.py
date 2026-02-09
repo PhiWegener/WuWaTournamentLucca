@@ -11,7 +11,7 @@ from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSi
 from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
 from .permissions import requireRole, requireLogin
 from .ws import broadcastDraftUpdate
-from .draft import _getCurrentBanSlot, _getCurrentPickSlot, BAN_COUNT, PICK_COUNT, buildDraftContext
+from .draft import _getCurrentBanSlot, _getCurrentPickSlot, BAN_COUNT, PICK_COUNT, buildDraftContext, _getUserSide
 
 def home(request):
     return render(request, "core/home.html")
@@ -430,9 +430,12 @@ def matchConfirmBans(request, matchId: int):
         broadcastDraftUpdate(match.id)
         return redirect("matchDetail", matchId=matchId)
 
-    # Nur Resonatoren, die im Match noch nicht verwendet wurden (Ban oder Pick)
     usedIds = set(
-        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+	MatchDraftAction.objects.filter(
+		match=match,
+		action_type=DraftActionType.BAN,
+		acting_side=userSide,
+	).values_list("resonator_id", flat=True)
     )
 
     # Wenn ich im aktuellen Slot schon einen pending Ban habe, darf ich den "re-choosen":
@@ -520,23 +523,23 @@ def matchConfirmPicks(request, matchId: int):
         broadcastDraftUpdate(match.id)
         return redirect("matchDetail", matchId=matchId)
 
-    # used: alles im match (ban+pick)
-    usedPickIds = set(
-        MatchDraftAction.objects.filter(match=match, action_type=DraftActionType.PICK,).values_list("resonator_id", flat=True)
-    )
+    usedPickIds=set(
+		MatchDraftAction.objects.filter(
+			match=match,
+			action_type=DraftActionType.PICK,
+			acting_side=userSide,
+		).values_list("resonator_id", flat=True)
+	)
+	existing = MatchDraftAction.objects.filter(
+		match=match,
+		action_type=DraftActionType.PICK,
+		acting_side=userSide,
+		slot_index=currentSlot,
+		is_locked=False,
+	).first()
+	if existing is not None:
+		usedPickIds.discard(existing.resonator_id)
 
-    # allow reselect own pending pick in this slot
-    existing = MatchDraftAction.objects.filter(
-        match=match,
-        action_type=DraftActionType.PICK,
-        acting_side=userSide,
-        slot_index=currentSlot,
-        is_locked=False,
-    ).first()
-    if existing is not None:
-        usedIds.discard(existing.resonator_id)
-
-    # Resonatoren, die gegen mich gelockt gebannt wurden, darf ich nicht picken
     bannedAgainstMe = set(
         MatchDraftAction.objects.filter(
             match=match,
