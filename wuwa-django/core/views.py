@@ -1,17 +1,35 @@
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from django.db.models import Prefetch
-from django.utils import timezone
-from django.db.models import Q
-from django.http import HttpResponseForbidden, HttpResponse
 from django.db import transaction
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.utils import timezone
 
-from .models import Tournament, Match, BossTime, Boss, Player, UserRole, MatchSide, MatchDraftAction, Resonator, DraftActionType
-from .forms import HostMatchCreateForm, HostMatchWinnerForm, PlayerTimeSubmitForm, DraftActionForm, MatchTimeSubmitForm, BanConfirmForm, PickConfirmForm
-from .permissions import requireRole, requireLogin
+from .draft import BAN_COUNT, PICK_COUNT, _getCurrentBanSlot, _getCurrentPickSlot, _getUserSide, buildDraftContext
+from .forms import (
+    BanConfirmForm,
+    DraftActionForm,
+    HostMatchCreateForm,
+    HostMatchWinnerForm,
+    MatchTimeSubmitForm,
+    PickConfirmForm,
+    PlayerTimeSubmitForm,
+)
+from .models import (
+    Boss,
+    BossTime,
+    DraftActionType,
+    Match,
+    MatchDraftAction,
+    MatchSide,
+    Resonator,
+    Tournament,
+    UserRole,
+)
+from .permissions import requireLogin, requireRole
 from .ws import broadcastDraftUpdate
-from .draft import _getCurrentBanSlot, _getCurrentPickSlot, BAN_COUNT, PICK_COUNT, buildDraftContext, _getUserSide
+
 
 def home(request):
     return render(request, "core/home.html")
@@ -33,6 +51,7 @@ def matchDraftPartial(request, matchId: int):
     context = buildDraftContext(match, request.user)
     html = render_to_string("core/partials/match_draft.html", context, request=request)
     return HttpResponse(html)
+
 
 def userLogin(request):
     if request.method == "POST":
@@ -62,17 +81,19 @@ def playerDashboard(request):
     player = request.user.player
 
     matches = (
-        Match.objects
-        .select_related("player_left", "player_right", "boss", "tournament", "winner_player")
+        Match.objects.select_related("player_left", "player_right", "boss", "tournament", "winner_player")
         .filter(Q(player_left=player) | Q(player_right=player))
         .order_by("-id")
     )
 
-    return render(request, "core/player_dashboard.html", {
-        "player": player,
-        "matches": matches,
-    })
-
+    return render(
+        request,
+        "core/player_dashboard.html",
+        {
+            "player": player,
+            "matches": matches,
+        },
+    )
 
 
 @requireRole(UserRole.PLAYER)
@@ -107,15 +128,14 @@ def playerSubmitTime(request):
 
     return redirect("playerDashboard")
 
+
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
 def hostTournamentList(request):
     """
     Turnierliste
     """
     tournaments = Tournament.objects.all().order_by("-id")
-    return render(request, "core/host_tournament_list.html", {
-        "tournaments": tournaments
-    })
+    return render(request, "core/host_tournament_list.html", {"tournaments": tournaments})
 
 
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
@@ -126,8 +146,7 @@ def hostTournamentDetail(request, tournamentId: int):
     tournament = get_object_or_404(Tournament, id=tournamentId)
 
     matches = (
-        Match.objects
-        .select_related("player_left", "player_right", "boss", "winner_player")
+        Match.objects.select_related("player_left", "player_right", "boss", "winner_player")
         .filter(tournament=tournament)
         .order_by("-id")
     )
@@ -141,43 +160,37 @@ def hostTournamentDetail(request, tournamentId: int):
             firstPickSide = form.cleaned_data["firstPickSide"]
 
             if playerLeft.id == playerRight.id:
-                return render(request, "core/host_tournament_detail.html",  {
-                    "tournament": tournament,
-                    "matches": matches,
-                    "form": form,
-                    "error": "Left and right Player must be different."
-                })
-            
+                return render(
+                    request,
+                    "core/host_tournament_detail.html",
+                    {
+                        "tournament": tournament,
+                        "matches": matches,
+                        "form": form,
+                        "error": "Left and right Player must be different.",
+                    },
+                )
+
             Match.objects.create(
-                tournament = tournament,
-                player_left = playerLeft,
-                player_right = playerRight,
-                boss = boss,
-                first_pick_side = firstPickSide,
+                tournament=tournament,
+                player_left=playerLeft,
+                player_right=playerRight,
+                boss=boss,
+                first_pick_side=firstPickSide,
             )
             return redirect("hostTournamentDetail", tournamentId=tournament.id)
     else:
         form = HostMatchCreateForm()
 
-    return render(request, "core/host_tournament_detail.html", {
-        "tournament": tournament,
-        "matches": matches,
-        "form": form,
-    })
-
-
-# @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
-# def hostMatchDetail(request, matchId: int):
-#     match = get_object_or_404(
-#         Match.objects.select_related("player_left", "player_right", "boss", "winner_player", "tournament"),
-#         id=matchId,
-#     )
-#     form = HostMatchWinnerForm(initial={
-#         "winner": match.winner_player_id or None,
-#         "leftTimeSeconds": match.left_time_seconds or "",
-#         "rightTimeSeconds": match.right_time_seconds or "",
-#     })
-#     return render(request, "core/host_match_detail.html", {"match": match, "form": form})
+    return render(
+        request,
+        "core/host_tournament_detail.html",
+        {
+            "tournament": tournament,
+            "matches": matches,
+            "form": form,
+        },
+    )
 
 
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
@@ -198,6 +211,7 @@ def hostSetWinner(request, matchId: int):
 
     return redirect("matchDetail", matchId=matchId)
 
+
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
 def hostMatchStart(request, matchId: int):
     if request.method != "POST":
@@ -211,6 +225,7 @@ def hostMatchStart(request, matchId: int):
         match.save()
 
     return redirect("matchDetail", matchId=matchId)
+
 
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
 def hostMatchFinish(request, matchId: int):
@@ -227,30 +242,6 @@ def hostMatchFinish(request, matchId: int):
     return redirect("matchDetail", matchId=matchId)
 
 
-@requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
-def hostSetWinner(request, matchId: int):
-    if request.method != "POST":
-        return redirect("matchDetail", matchId=matchId)
-
-    match = get_object_or_404(Match, id=matchId)
-    form = HostMatchWinnerForm(request.POST)
-    if not form.is_valid():
-        return redirect("matchDetail", matchId=matchId)
-
-    winnerPlayerId = form.cleaned_data["winnerPlayerId"]
-    leftTimeSeconds = form.cleaned_data.get("leftTimeSeconds")
-    rightTimeSeconds = form.cleaned_data.get("rightTimeSeconds")
-
-    if winnerPlayerId not in (match.player_left_id, match.player_right_id):
-        return redirect("matchDetail", matchId=matchId)
-
-    match.winner_player_id = winnerPlayerId
-    match.left_time_seconds = leftTimeSeconds
-    match.right_time_seconds = rightTimeSeconds
-    match.save()
-
-    return redirect("matchDetail", matchId=matchId)
-
 def leaderboards(request):
     """
     Öffentliche Leaderboards (Top5 pro Boss).
@@ -259,16 +250,20 @@ def leaderboards(request):
     bossLeaderboards = []
     for boss in bosses:
         top5 = (
-            BossTime.objects
-            .select_related("player")
+            BossTime.objects.select_related("player")
             .filter(boss=boss)
             .order_by("best_time_seconds")[:5]
         )
         bossLeaderboards.append((boss, top5))
 
-    return render(request, "core/leaderboards.html", {
-        "bossLeaderboards": bossLeaderboards,
-    })
+    return render(
+        request,
+        "core/leaderboards.html",
+        {
+            "bossLeaderboards": bossLeaderboards,
+        },
+    )
+
 
 def matchDetail(request, matchId: int):
     match = get_object_or_404(
@@ -291,6 +286,7 @@ def matchDetail(request, matchId: int):
 
     context = buildDraftContext(match, request.user)
     return render(request, "core/match_detail.html", context)
+
 
 @requireLogin
 def matchDraftAction(request, matchId: int):
@@ -335,6 +331,7 @@ def matchDraftAction(request, matchId: int):
     broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
 
+
 @requireRole(UserRole.PLAYER)
 def matchSubmitTime(request, matchId: int):
     if request.method != "POST":
@@ -377,12 +374,14 @@ def matchSubmitTime(request, matchId: int):
 
     return redirect("matchDetail", matchId=matchId)
 
+
 def getConfirmedBans(match, actingSide: str):
     return MatchDraftAction.objects.filter(
         match=match,
         action_type=DraftActionType.BAN,
         acting_side=actingSide,
     ).values_list("resonator_id", flat=True)
+
 
 def getBansAgainstSide(match, targetSide: str):
     return MatchDraftAction.objects.filter(
@@ -391,20 +390,17 @@ def getBansAgainstSide(match, targetSide: str):
         target_side=targetSide,
     ).values_list("resonator_id", flat=True)
 
+
 def getAllPicked(match):
     return MatchDraftAction.objects.filter(
         match=match,
         action_type=DraftActionType.PICK,
     ).values_list("resonator_id", flat=True)
 
+
 def getPickAvailableForSide(match, side: str):
     bannedAgainstMe = set(getBansAgainstSide(match, side))
-
-    return (
-        Resonator.objects
-        .filter(is_enabled=True)
-        .exclude(id__in=bannedAgainstMe)
-    )
+    return Resonator.objects.filter(is_enabled=True).exclude(id__in=bannedAgainstMe)
 
 
 @transaction.atomic
@@ -431,11 +427,11 @@ def matchConfirmBans(request, matchId: int):
         return redirect("matchDetail", matchId=matchId)
 
     usedIds = set(
-	MatchDraftAction.objects.filter(
-		match=match,
-		action_type=DraftActionType.BAN,
-		acting_side=userSide,
-	).values_list("resonator_id", flat=True)
+        MatchDraftAction.objects.filter(
+            match=match,
+            action_type=DraftActionType.BAN,
+            acting_side=userSide,
+        ).values_list("resonator_id", flat=True)
     )
 
     # Wenn ich im aktuellen Slot schon einen pending Ban habe, darf ich den "re-choosen":
@@ -496,6 +492,7 @@ def matchConfirmBans(request, matchId: int):
     broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
 
+
 @transaction.atomic
 def matchConfirmPicks(request, matchId: int):
     if request.method != "POST":
@@ -523,22 +520,23 @@ def matchConfirmPicks(request, matchId: int):
         broadcastDraftUpdate(match.id)
         return redirect("matchDetail", matchId=matchId)
 
-    usedPickIds=set(
-		MatchDraftAction.objects.filter(
-			match=match,
-			action_type=DraftActionType.PICK,
-			acting_side=userSide,
-		).values_list("resonator_id", flat=True)
-	)
-	existing = MatchDraftAction.objects.filter(
-		match=match,
-		action_type=DraftActionType.PICK,
-		acting_side=userSide,
-		slot_index=currentSlot,
-		is_locked=False,
-	).first()
-	if existing is not None:
-		usedPickIds.discard(existing.resonator_id)
+    usedPickIds = set(
+        MatchDraftAction.objects.filter(
+            match=match,
+            action_type=DraftActionType.PICK,
+            acting_side=userSide,
+        ).values_list("resonator_id", flat=True)
+    )
+
+    existing = MatchDraftAction.objects.filter(
+        match=match,
+        action_type=DraftActionType.PICK,
+        acting_side=userSide,
+        slot_index=currentSlot,
+        is_locked=False,
+    ).first()
+    if existing is not None:
+        usedPickIds.discard(existing.resonator_id)
 
     bannedAgainstMe = set(
         MatchDraftAction.objects.filter(
@@ -595,7 +593,6 @@ def matchConfirmPicks(request, matchId: int):
 
     broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
-
 
 
 @transaction.atomic
