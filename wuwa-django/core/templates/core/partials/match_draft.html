@@ -90,3 +90,24 @@
     <button type="submit">Confirm picks</button>
   </form>
 {% endif %}
+
+{% if isHost %}
+  <h4>Pending Bans LEFT → RIGHT</h4>
+  <ul>
+    {% for a in bansLeftToRightPending %}
+      <li>Ban {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
+    {% empty %}
+      <li>None</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Pending Bans RIGHT → LEFT</h4>
+  <ul>
+    {% for a in bansRightToLeftPending %}
+      <li>Ban {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
+    {% empty %}
+      <li>None</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+

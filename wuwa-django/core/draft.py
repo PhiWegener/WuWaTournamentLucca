@@ -33,66 +33,46 @@ def buildDraftContext(match, requestUser):
     userSide = _getUserSide(requestUser, match)
     isPlayerInMatch = userSide is not None
 
-    actions = MatchDraftAction.objects.select_related("resonator").filter(match=match).order_by("step_index")
-
     banPhaseDone = match.left_bans_confirmed and match.right_bans_confirmed
     pickPhaseDone = match.left_picks_confirmed and match.right_picks_confirmed
 
     currentBanSlot = _getCurrentBanSlot(match)
-    banFilter = {"is_locked": True}
-    if isHost:
-        banFilter = {}
 
-    # Nur locked Bans anzeigen (erst wenn beide confirmed haben)
-    bansLeftToRight = (
-        MatchDraftAction.objects.select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.BAN,
-            acting_side=MatchSide.LEFT,
-            target_side=MatchSide.RIGHT,
-            **banFilter,
-        )
-        .order_by("slot_index", "step_index")
-    )
+    # FINAL (locked) – das sehen Spieler + Host
+    bansLeftToRight = MatchDraftAction.objects.select_related("resonator").filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=MatchSide.LEFT,
+        target_side=MatchSide.RIGHT,
+        is_locked=True,
+    ).order_by("slot_index")
 
-    bansRightToLeft = (
-        MatchDraftAction.objects.select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.BAN,
-            acting_side=MatchSide.RIGHT,
-            target_side=MatchSide.LEFT,
-            **banFilter,
-        )
-        .order_by("slot_index")
-    )
+    bansRightToLeft = MatchDraftAction.objects.select_related("resonator").filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=MatchSide.RIGHT,
+        target_side=MatchSide.LEFT,
+        is_locked=True,
+    ).order_by("slot_index")
 
-    picksLeft = (
-        MatchDraftAction.objects.select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.PICK,
-            acting_side=MatchSide.LEFT,
-            target_side=MatchSide.LEFT,
-        )
-        .order_by("step_index")
-    )
+    # PENDING – nur Host/Observer soll das sehen
+    bansLeftToRightPending = MatchDraftAction.objects.select_related("resonator").filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=MatchSide.LEFT,
+        target_side=MatchSide.RIGHT,
+        is_locked=False,
+    ).order_by("slot_index")
 
-    picksRight = (
-        MatchDraftAction.objects.select_related("resonator")
-        .filter(
-            match=match,
-            action_type=DraftActionType.PICK,
-            acting_side=MatchSide.RIGHT,
-            target_side=MatchSide.RIGHT,
-        )
-        .order_by("step_index")
-    )
+    bansRightToLeftPending = MatchDraftAction.objects.select_related("resonator").filter(
+        match=match,
+        action_type=DraftActionType.BAN,
+        acting_side=MatchSide.RIGHT,
+        target_side=MatchSide.LEFT,
+        is_locked=False,
+    ).order_by("slot_index")
 
-    banForm = None
-    pickForm = None
-
+    # eigener pending Ban (für Spieler UI)
     banPending = None
     if isPlayerInMatch and not banPhaseDone and currentBanSlot <= BAN_COUNT:
         banPending = MatchDraftAction.objects.select_related("resonator").filter(
@@ -103,7 +83,9 @@ def buildDraftContext(match, requestUser):
             is_locked=False,
         ).first()
 
-        # wenn schon pending ausgewählt, dann zeigen wir Form optional trotzdem (re-choose)
+    banForm = None
+    if isPlayerInMatch and not banPhaseDone and currentBanSlot <= BAN_COUNT:
+        # IMPORTANT: available darf usedResonators berücksichtigen (wie in deiner view)
         banForm = BanConfirmForm(available=Resonator.objects.filter(is_enabled=True))
 
     return {
@@ -111,16 +93,14 @@ def buildDraftContext(match, requestUser):
         "isHost": isHost,
         "userSide": userSide,
         "isPlayerInMatch": isPlayerInMatch,
-        "actions": actions,
         "banPhaseDone": banPhaseDone,
         "pickPhaseDone": pickPhaseDone,
         "currentBanSlot": currentBanSlot,
         "banCount": BAN_COUNT,
         "banPending": banPending,
-        "banForm": banForm,
-        "pickForm": pickForm,
+
         "bansLeftToRight": bansLeftToRight,
         "bansRightToLeft": bansRightToLeft,
-        "picksLeft": picksLeft,
-        "picksRight": picksRight,
+        "bansLeftToRightPending": bansLeftToRightPending if isHost else [],
+        "bansRightToLeftPending": bansRightToLeftPending if isHost else [],
     }
