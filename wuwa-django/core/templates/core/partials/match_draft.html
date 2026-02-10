@@ -14,13 +14,14 @@
 
 <hr>
 
+{# =======================
+   BANS (final immer anzeigen)
+   ======================= #}
+
 <h4>Bans LEFT → RIGHT</h4>
 <ul>
   {% for a in bansLeftToRight %}
-    <li>
-      Ban {{ a.slot_index }}: {{ a.resonator.name }}
-      {% if not a.is_locked %}<em>(pending)</em>{% endif %}
-    </li>
+    <li>Ban {{ a.slot_index }}: {{ a.resonator.name }}</li>
   {% empty %}
     <li>None</li>
   {% endfor %}
@@ -29,17 +30,38 @@
 <h4>Bans RIGHT → LEFT</h4>
 <ul>
   {% for a in bansRightToLeft %}
-    <li>
-      Ban {{ a.slot_index }}: {{ a.resonator.name }}
-      {% if not a.is_locked %}<em>(pending)</em>{% endif %}
-    </li>
+    <li>Ban {{ a.slot_index }}: {{ a.resonator.name }}</li>
   {% empty %}
     <li>None</li>
   {% endfor %}
 </ul>
 
+{# Pending Bans nur solange BAN-Phase läuft #}
+{% if isHost and not banPhaseDone %}
+  <h4>Pending Bans LEFT → RIGHT</h4>
+  <ul>
+    {% for a in bansLeftToRightPending %}
+      <li>Ban {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
+    {% empty %}
+      <li>None</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Pending Bans RIGHT → LEFT</h4>
+  <ul>
+    {% for a in bansRightToLeftPending %}
+      <li>Ban {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
+    {% empty %}
+      <li>None</li>
+    {% endfor %}
+  </ul>
+{% endif %}
 
 <hr>
+
+{# =======================
+   PICKS (final immer anzeigen)
+   ======================= #}
 
 <h4>Picks LEFT</h4>
 <ul>
@@ -59,62 +81,70 @@
   {% endfor %}
 </ul>
 
+{# Pending Picks nur wenn BAN fertig und PICK-Phase läuft #}
+{% if isHost and banPhaseDone and not pickPhaseDone %}
+  <h4>Pending Picks LEFT</h4>
+  <ul>
+    {% for a in picksLeftPending %}
+      <li>Pick {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
+    {% empty %}
+      <li>None</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Pending Picks RIGHT</h4>
+  <ul>
+    {% for a in picksRightPending %}
+      <li>Pick {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
+    {% empty %}
+      <li>None</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
 <hr>
 
-{% if banPhaseDone %}
-  <p><b>Ban phase complete.</b></p>
-{% else %}
-  <p><b>Ban slot:</b> {{ currentBanSlot }} / {{ banCount }}</p>
-{% endif %}
+{% if not isHost %}
+  {# =======================
+     Player UI (Ban/Pick Forms)
+     ======================= #}
 
-{% if banPending %}
-  <p>
-    You selected (pending): <b>{{ banPending.resonator.name }}</b><br>
-    Waiting for opponent to confirm this slot…
-  </p>
-{% endif %}
-
-{% if banForm %}
-  <h4>Select your ban for slot {{ currentBanSlot }}</h4>
-
-  {% if banAvailableCount == 0 %}
-    <p><b>Keine Resonatoren verfügbar.</b></p>
+  {% if banPhaseDone %}
+    <p><b>Ban phase complete.</b></p>
+    <p><b>Pick slot:</b> {{ currentPickSlot }} / {{ pickCount }}</p>
+  {% else %}
+    <p><b>Ban slot:</b> {{ currentBanSlot }} / {{ banCount }}</p>
   {% endif %}
 
-{% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
-  <form method="post" action="{% url 'matchConfirmBans' match.id %}">
-    {% csrf_token %}
-    {{ banForm.as_p }}
-    <button type="submit">Confirm ban</button>
-  </form>
-{% endif %}
+  {% if banPending %}
+    <p>
+      You selected (pending): <b>{{ banPending.resonator.name }}</b><br>
+      Waiting for opponent to confirm this slot…
+    </p>
+  {% endif %}
 
-{% if pickForm %}
-  <h4>Select 3 picks (mirror picks allowed)</h4>
-  {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
-  <form method="post" action="{% url 'matchConfirmPicks' match.id %}">
-    {% csrf_token %}
-    {{ pickForm.as_p }}
-    <button type="submit">Confirm picks</button>
-  </form>
-{% endif %}
+  {% if banForm %}
+    <h4>Select your ban for slot {{ currentBanSlot }}</h4>
 
-{% if isHost %}
-  <h4>Pending Bans LEFT → RIGHT</h4>
-  <ul>
-    {% for a in bansLeftToRightPending %}
-      <li>Ban {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
-    {% empty %}
-      <li>None</li>
-    {% endfor %}
-  </ul>
+    {% if banAvailableCount == 0 %}
+      <p><b>Keine Resonatoren verfügbar.</b></p>
+    {% endif %}
 
-  <h4>Pending Bans RIGHT → LEFT</h4>
-  <ul>
-    {% for a in bansRightToLeftPending %}
-      <li>Ban {{ a.slot_index }}: {{ a.resonator.name }} <em>(pending)</em></li>
-    {% empty %}
-      <li>None</li>
-    {% endfor %}
-  </ul>
+    {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
+    <form method="post" action="{% url 'matchConfirmBans' match.id %}">
+      {% csrf_token %}
+      {{ banForm.as_p }}
+      <button type="submit">Confirm ban</button>
+    </form>
+  {% endif %}
+
+  {% if pickForm %}
+    <h4>Select 3 picks (mirror picks allowed)</h4>
+    {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
+    <form method="post" action="{% url 'matchConfirmPicks' match.id %}">
+      {% csrf_token %}
+      {{ pickForm.as_p }}
+      <button type="submit">Confirm picks</button>
+    </form>
+  {% endif %}
 {% endif %}

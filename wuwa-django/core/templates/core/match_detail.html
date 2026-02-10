@@ -105,4 +105,8 @@
   {% endif %}
 {% endif %}
 
-<p><a href="{% url 'playerDashboard' %}">Back</a></p>
+{% if isHost %}
+    <p><a href="{% url 'hostTournamentDetail' match.tournament_id %}">Back</a></p>
+{% else %}
+    <p><a href="{% url 'playerDashboard' %}">Back</a></p>
+{% endif %}
