@@ -184,6 +184,7 @@ def hostMatchStart(request, matchId: int):
 
     return redirect("matchDetail", matchId=matchId)
 
+@transaction.atomic()
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
 def hostMatchFinish(request, matchId: int):
     if request.method != "POST":
@@ -232,7 +233,7 @@ def leaderboards(request):
     for boss in bosses:
         top5 = (
             BossTime.objects.select_related("player")
-            .filter(boss=boss)
+            .filter(boss=boss, best_time_ms__isnull=False)
             .order_by("best_time_ms")[:5]
         )
         bossLeaderboards.append((boss, top5))
@@ -358,7 +359,7 @@ def matchSubmitTime(request, matchId: int):
         boss=boss,
         defaults={"best_time_ms": timeMs},
     )
-    if not created and timeMs < bossTime.best_time_ms:
+    if not created and (bossTime.best_time_ms is None or timeMs < bossTime.best_time_ms):
         bossTime.best_time_ms = timeMs
         bossTime.save()
 
