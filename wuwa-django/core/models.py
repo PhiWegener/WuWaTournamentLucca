@@ -75,8 +75,8 @@ class Match(models.Model):
     first_pick_side = models.CharField(max_length=5, choices=MatchSide.choices)
     winner_player = models.ForeignKey(Player, null=True, blank=True, on_delete=models.SET_NULL, related_name="wins")
 
-    left_time_seconds = models.PositiveIntegerField(null=True, blank=True)
-    right_time_seconds = models.PositiveIntegerField(null=True, blank=True)
+    left_time_ms = models.PositiveIntegerField(null=True, blank=True)
+    right_time_ms = models.PositiveIntegerField(null=True, blank=True)
 
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -145,12 +145,9 @@ class BossTime(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="boss_times")
     boss = models.ForeignKey(Boss, on_delete=models.CASCADE, related_name="boss_times")
 
-    best_time_seconds = models.PositiveIntegerField()
+    best_time_ms = models.PositiveIntegerField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("player", "boss")]
-        ordering = ["best_time_seconds"]
-
-    def __str__(self) -> str:
-        return f"{self.player} - {self.boss}: {self.best_time_seconds}s"
+        ordering = ["best_time_ms"]

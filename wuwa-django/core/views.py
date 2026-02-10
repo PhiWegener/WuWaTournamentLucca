@@ -11,7 +11,6 @@ from .forms import (
     BanConfirmForm,
     DraftActionForm,
     HostMatchCreateForm,
-    HostMatchWinnerForm,
     MatchTimeSubmitForm,
     PickConfirmForm,
     PlayerTimeSubmitForm,
@@ -114,16 +113,16 @@ def playerSubmitTime(request):
 
     player = request.user.player
     boss = form.cleaned_data["boss"]
-    timeSeconds = form.cleaned_data["timeSeconds"]
+    timeMs = form.cleaned_data["timeMs"]
 
     bossTime, created = BossTime.objects.get_or_create(
         player=player,
         boss=boss,
-        defaults={"best_time_seconds": timeSeconds},
+        defaults={"best_time_ms": timeMs},
     )
 
-    if not created and timeSeconds < bossTime.best_time_seconds:
-        bossTime.best_time_seconds = timeSeconds
+    if not created and timeMs < bossTime.best_time_ms:
+        bossTime.best_time_ms = timeMs
         bossTime.save()
 
     return redirect("playerDashboard")
@@ -194,25 +193,6 @@ def hostTournamentDetail(request, tournamentId: int):
 
 
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
-def hostSetWinner(request, matchId: int):
-    if request.method != "POST":
-        return redirect("matchDetail", matchId=matchId)
-
-    match = get_object_or_404(Match, id=matchId)
-    form = HostMatchWinnerForm(request.POST, match=match)
-    if not form.is_valid():
-        return redirect("matchDetail", matchId=matchId)
-
-    winner = form.cleaned_data["winner"]
-    match.winner_player = winner
-    match.left_time_seconds = form.cleaned_data.get("leftTimeSeconds")
-    match.right_time_seconds = form.cleaned_data.get("rightTimeSeconds")
-    match.save()
-
-    return redirect("matchDetail", matchId=matchId)
-
-
-@requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
 def hostMatchStart(request, matchId: int):
     if request.method != "POST":
         return redirect("matchDetail", matchId=matchId)
@@ -226,7 +206,6 @@ def hostMatchStart(request, matchId: int):
 
     return redirect("matchDetail", matchId=matchId)
 
-
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
 def hostMatchFinish(request, matchId: int):
     if request.method != "POST":
@@ -234,12 +213,25 @@ def hostMatchFinish(request, matchId: int):
 
     match = get_object_or_404(Match, id=matchId)
 
-    # nur beenden, wenn gestartet und nicht beendet
-    if match.started_at is not None and match.finished_at is None:
-        match.finished_at = timezone.now()
-        match.save()
+    if match.started_at is None:
+        return redirect("matchDetail", matchId=matchId)
 
+    if match.finished_at is not None:
+        return redirect("matchDetail", matchId=matchId)
+
+    # NEU: nur beenden, wenn beide Zeiten existieren
+    if match.left_time_ms is None or match.right_time_ms is None:
+        return redirect("matchDetail", matchId=matchId)
+    
+    if match.left_time_ms < match.right_time_ms:
+        match.winner_player_id = match.player_left_id
+    if match.left_time_ms > match.right_time_ms:
+        match.winner_player_id = match.player_right_id
+
+    match.finished_at = timezone.now()
+    match.save()
     return redirect("matchDetail", matchId=matchId)
+
 
 
 def leaderboards(request):
@@ -252,7 +244,7 @@ def leaderboards(request):
         top5 = (
             BossTime.objects.select_related("player")
             .filter(boss=boss)
-            .order_by("best_time_seconds")[:5]
+            .order_by("best_time_ms")[:5]
         )
         bossLeaderboards.append((boss, top5))
 
@@ -285,6 +277,12 @@ def matchDetail(request, matchId: int):
         return HttpResponseForbidden("Forbidden")
 
     context = buildDraftContext(match, request.user)
+
+    if isPlayerInMatch and match.boss_id and match.started_at and not match.finished_at:
+        context["timeForm"] = MatchTimeSubmitForm()
+    else:
+        context["timeForm"] = None
+
     return render(request, "core/match_detail.html", context)
 
 
@@ -334,15 +332,25 @@ def matchDraftAction(request, matchId: int):
 
 @requireRole(UserRole.PLAYER)
 def matchSubmitTime(request, matchId: int):
+    """
+    Spieler trägt eine Zeit für dieses Match ein.
+    - Nur erlaubt, wenn Match gestartet und nicht beendet ist.
+    - Globales BossTime (Personal Best) wird ebenfalls aktualisiert (wenn besser).
+    """
     if request.method != "POST":
         return redirect("matchDetail", matchId=matchId)
 
     match = get_object_or_404(Match, id=matchId)
 
-    # Muss im Match sein
     userSide = _getUserSide(request.user, match)
     if userSide is None:
         return HttpResponseForbidden("Forbidden")
+
+    if match.started_at is None:
+        return redirect("matchDetail", matchId=matchId)
+
+    if match.finished_at is not None:
+        return redirect("matchDetail", matchId=matchId)
 
     if match.boss is None:
         return redirect("matchDetail", matchId=matchId)
@@ -351,28 +359,33 @@ def matchSubmitTime(request, matchId: int):
     if not form.is_valid():
         return redirect("matchDetail", matchId=matchId)
 
-    timeSeconds = form.cleaned_data["timeSeconds"]
+    timeMs = form.cleaned_data["timeMs"]
     player = request.user.player
     boss = match.boss
 
+    # Global PB pro Boss updaten
     bossTime, created = BossTime.objects.get_or_create(
         player=player,
         boss=boss,
-        defaults={"best_time_seconds": timeSeconds},
+        defaults={"best_time_ms": timeMs},
     )
-
-    if not created and timeSeconds < bossTime.best_time_seconds:
-        bossTime.best_time_seconds = timeSeconds
+    if not created and timeMs < bossTime.best_time_ms:
+        bossTime.best_time_ms = timeMs
         bossTime.save()
 
-    # Optional: Match-spezifische Zeit setzen
+    # Match-spezifische Zeit updaten (nur wenn besser)
     if userSide == MatchSide.LEFT:
-        match.left_time_seconds = timeSeconds
+        current = match.left_time_ms
+        if current is None or timeMs < current:
+            match.left_time_ms = timeMs
     else:
-        match.right_time_seconds = timeSeconds
-    match.save()
+        current = match.right_time_ms
+        if current is None or timeMs < current:
+            match.right_time_ms = timeMs
 
+    match.save()
     return redirect("matchDetail", matchId=matchId)
+
 
 
 def getConfirmedBans(match, actingSide: str):

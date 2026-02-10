@@ -1,3 +1,5 @@
+{% load timefmt %}
+
 <h2>Match</h2>
 
 {% if userSide %}
@@ -22,24 +24,27 @@
 </p>
 
 {% if isHost %}
-  <h3>Host controls</h3>
-
   <form method="post" action="{% url 'hostMatchStart' match.id %}">
     {% csrf_token %}
     <button type="submit">Start</button>
   </form>
 
-  <form method="post" action="{% url 'hostMatchFinish' match.id %}">
-    {% csrf_token %}
-    <button type="submit">Finish</button>
-  </form>
-
-  <h4>Winner & times</h4>
-  <form method="post" action="{% url 'hostSetWinner' match.id %}">
-    {% csrf_token %}
-    {{ hostWinnerForm.as_p }}
-    <button type="submit">Save</button>
-  </form>
+  {% if match.left_time_ms != None %}
+    <p><em>Left Time: {{ match.left_time_ms|msToTime }}</em></p>
+  {% endif %}
+  {% if match.right_time_ms != None %}
+    <p><em>Right Time: {{ match.right_time_ms|msToTime }}</em></p>
+  {% endif %}
+  {% if match.started_at and not match.finished_at %}
+    {% if match.left_time_ms != None and match.right_time_ms != None %}
+      <form method="post" action="{% url 'hostMatchFinish' match.id %}">
+        {% csrf_token %}
+        <button type="submit">Finish</button>
+      </form>
+    {% else %}
+      <p><em>Waiting for both times...</em></p>
+    {% endif %}
+  {% endif %}
 {% endif %}
 
 <hr>
@@ -92,7 +97,7 @@
 
 <hr>
 
-{% if isPlayerInMatch %}
+{% if isPlayerInMatch and timeForm %}
   <h3>Submit time</h3>
   {% if match.boss %}
     <form method="post" action="{% url 'matchSubmitTime' match.id %}">

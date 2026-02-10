@@ -21,7 +21,6 @@ urlpatterns = [
     # path("host/match/<int:matchId>/", views.hostMatchDetail, name="hostMatchDetail"),
     path("host/match/<int:matchId>/start/", views.hostMatchStart, name="hostMatchStart"),
     path("host/match/<int:matchId>/finish/", views.hostMatchFinish, name="hostMatchFinish"),
-    path("host/match/<int:matchId>/set-winner/", views.hostSetWinner, name="hostSetWinner"),
 
     path("match/<int:matchId>/", views.matchDetail, name="matchDetail"),
     path("match/<int:matchId>/confirm-bans/", views.matchConfirmBans, name="matchConfirmBans"),
