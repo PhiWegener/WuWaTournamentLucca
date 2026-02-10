@@ -67,8 +67,8 @@ class Resonator(models.Model):
 class Match(models.Model):
     tournament = models.ForeignKey(Tournament, null=True, blank=True, on_delete=models.SET_NULL, related_name="matches")
 
-    player_left = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="matches_as_left")
-    player_right = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="matches_as_right")
+    player_left = models.ForeignKey(Player, null=True, blank=True, on_delete=models.SET_NULL, related_name="matches_as_left")
+    player_right = models.ForeignKey(Player, null=True, blank=True, on_delete=models.SET_NULL, related_name="matches_as_right")
 
     boss = models.ForeignKey(Boss, null=True, blank=True, on_delete=models.SET_NULL, related_name="matches")
 

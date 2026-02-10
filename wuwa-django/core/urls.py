@@ -27,7 +27,7 @@ urlpatterns = [
     path("match/<int:matchId>/submit-time/", views.matchSubmitTime, name="matchSubmitTime"),
     path("match/<int:matchId>/draft-partial/", views.matchDraftPartial, name="matchDraftPartial"),
 
-
+    path("host/tournament/<int:tournamentId>/generate-bracket-8/", views.hostGenerateBracket8, name="hostGenerateBracket8"),
 
     # Leaderboards
     path("leaderboards/", views.leaderboards, name="leaderboards"),

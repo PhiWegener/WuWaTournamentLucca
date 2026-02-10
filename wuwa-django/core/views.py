@@ -93,6 +93,17 @@ def playerDashboard(request):
         },
     )
 
+@requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
+def hostGenerateBracket8(request, tournamentId: int):
+    if request.method != "POST":
+        return redirect("hostTournamentDetail", tournamentId=tournamentId)
+
+    tournament = get_object_or_404(Tournament, id=tournamentId)
+
+    from .bracket import generateSingleElim8
+    generateSingleElim8(tournament, overwrite=True)
+
+    return redirect("hostTournamentDetail", tournamentId=tournament.id)
 
 
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
@@ -194,6 +205,17 @@ def hostMatchFinish(request, matchId: int):
         match.winner_player_id = match.player_left_id
     if match.left_time_ms > match.right_time_ms:
         match.winner_player_id = match.player_right_id
+
+    if match.next_match_id is not None:
+        nextMatch = Match.objects.select_for_update().get(id=match.next_match_id)
+
+        if match.next_side == MatchSide.LEFT:
+            nextMatch.player_left = match.winner_player
+        else:
+            nextMatch.player_right = match.winner_player
+
+        nextMatch.save(update_fields=["player_left", "player_right"])
+
 
     match.finished_at = timezone.now()
     match.save()
