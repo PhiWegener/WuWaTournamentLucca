@@ -13,12 +13,10 @@ urlpatterns = [
 
     # Player portal
     path("player/", views.playerDashboard, name="playerDashboard"),
-    path("player/submit-time/", views.playerSubmitTime, name="playerSubmitTime"),
 
     path("host/", views.hostTournamentList, name="hostTournamentList"),
     path("host/tournament/<int:tournamentId>/", views.hostTournamentDetail, name="hostTournamentDetail"),
 
-    # path("host/match/<int:matchId>/", views.hostMatchDetail, name="hostMatchDetail"),
     path("host/match/<int:matchId>/start/", views.hostMatchStart, name="hostMatchStart"),
     path("host/match/<int:matchId>/finish/", views.hostMatchFinish, name="hostMatchFinish"),
 

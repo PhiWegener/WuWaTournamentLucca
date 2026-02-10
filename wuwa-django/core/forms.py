@@ -2,9 +2,6 @@ from django import forms
 from .models import Boss, Match, Player, BossTime, MatchSide, Resonator, DraftActionType
 import re
 
-class PlayerTimeSubmitForm(forms.Form):
-    timeSeconds = forms.IntegerField(min_value=1)
-
 class HostMatchCreateForm(forms.Form):
     playerLeft = forms.ModelChoiceField(queryset=Player.objects.all())
     playerRight = forms.ModelChoiceField(queryset=Player.objects.all())

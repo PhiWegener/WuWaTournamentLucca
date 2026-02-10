@@ -13,7 +13,6 @@ from .forms import (
     HostMatchCreateForm,
     MatchTimeSubmitForm,
     PickConfirmForm,
-    PlayerTimeSubmitForm,
 )
 from .models import (
     Boss,
@@ -94,38 +93,6 @@ def playerDashboard(request):
         },
     )
 
-
-@requireRole(UserRole.PLAYER)
-def playerSubmitTime(request):
-    """
-    Spieler trägt Zeit ein:
-    - wenn besser als bestehend -> überschreiben
-    """
-    if request.user.player is None:
-        return render(request, "core/player_dashboard.html", {"error": "No player assigned to your account."})
-
-    if request.method != "POST":
-        return redirect("playerDashboard")
-
-    form = PlayerTimeSubmitForm(request.POST)
-    if not form.is_valid():
-        return redirect("playerDashboard")
-
-    player = request.user.player
-    boss = form.cleaned_data["boss"]
-    timeMs = form.cleaned_data["timeMs"]
-
-    bossTime, created = BossTime.objects.get_or_create(
-        player=player,
-        boss=boss,
-        defaults={"best_time_ms": timeMs},
-    )
-
-    if not created and timeMs < bossTime.best_time_ms:
-        bossTime.best_time_ms = timeMs
-        bossTime.save()
-
-    return redirect("playerDashboard")
 
 
 @requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
