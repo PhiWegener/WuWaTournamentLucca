@@ -2,10 +2,32 @@
 
 <form method="post">
   {% csrf_token %}
-  <label for="resSearch"><b>Player suchen</b></label>
-  <input id="resSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off" style="width: 100%; max-width: 420px;">
+  <label for="playerSearch"><b>Player suchen</b></label>
+  <input id="playerSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off"
+        style="width: 100%; max-width: 420px;">
   {{ form.as_p }}
   <button type="submit">Teilnehmer speichern</button>
 </form>
 
 <p><a href="{% url 'hostTournamentDetail' tournament.id %}">Zurück zum Turnier</a></p>
+
+
+<script>
+(function () {
+  const search = document.getElementById("playerSearch");
+  const list = document.getElementById("id_players"); // Django CheckboxSelectMultiple -> <ul id="id_players">
+  if (!search || !list) return;
+
+  const items = Array.from(list.querySelectorAll("li"));
+
+  function apply() {
+    const t = search.value.trim().toLowerCase();
+    items.forEach(li => {
+      const text = li.textContent.toLowerCase();
+      li.style.display = (!t || text.includes(t)) ? "" : "none";
+    });
+  }
+
+  search.addEventListener("input", apply);
+})();
+</script>

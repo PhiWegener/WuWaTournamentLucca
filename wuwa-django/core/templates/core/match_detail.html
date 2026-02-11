@@ -55,51 +55,6 @@
   {% include "core/partials/match_draft.html" %}
 </div>
 
-<script>
-(function () {
-  const root = document.getElementById("draftRoot");
-  const matchId = root.dataset.matchId;
-
-  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const wsUrl = wsProtocol + "://" + window.location.host + "/ws/match/" + matchId + "/draft/";
-
-  async function refreshDraft() {
-    const resp = await fetch("/match/" + matchId + "/draft-partial/", { credentials: "same-origin" });
-    if (resp.ok) {
-      root.innerHTML = await resp.text();
-    }
-  }
-
-  function connect() {
-    const socket = new WebSocket(wsUrl);
-
-    socket.onmessage = function (event) {
-      const data = JSON.parse(event.data);
-      if (data.type === "draft_refresh") {
-        refreshDraft();
-      }
-      if (data.type === "page_refresh") {
-        window.location.reload();
-      }
-    };
-
-    socket.onopen = function () {
-      refreshDraft(); // initial einmal ziehen
-    };
-
-    socket.onclose = function () {
-      setTimeout(connect, 1500);
-    };
-
-    socket.onerror = function () {
-      socket.close();
-    };
-  }
-
-  connect();
-})();
-</script>
-
 <hr>
 
 {% if isPlayerInMatch and timeForm and banPhaseDone and pickPhaseDone %}
@@ -120,3 +75,89 @@
 {% else %}
     <p><a href="{% url 'playerDashboard' %}">Back</a></p>
 {% endif %}
+
+
+<script>
+(function () {
+  const root = document.getElementById("draftRoot");
+  const matchId = root.dataset.matchId;
+
+  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = wsProtocol + "://" + window.location.host + "/ws/match/" + matchId + "/draft/";
+
+  function initDraftSearch() {
+    // Für jedes Draft-Formular separat filtern
+    root.querySelectorAll("form").forEach(form => {
+      const search = form.querySelector("input.draftSearch");
+      if (!search) return;
+
+      const selects = Array.from(form.querySelectorAll("select"));
+      if (selects.length === 0) return;
+
+      const originals = new Map();
+      selects.forEach(sel => {
+        originals.set(sel, Array.from(sel.options).map(o => ({ value: o.value, text: o.textContent })));
+      });
+
+      function applyFilter() {
+        const t = search.value.trim().toLowerCase();
+
+        selects.forEach(sel => {
+          const prev = sel.value;
+          const opts = originals.get(sel) || [];
+          sel.innerHTML = "";
+
+          for (const o of opts) {
+            if (!t || o.text.toLowerCase().includes(t)) {
+              const opt = document.createElement("option");
+              opt.value = o.value;
+              opt.textContent = o.text;
+              sel.appendChild(opt);
+            }
+          }
+
+          // Auswahl möglichst behalten
+          if (prev) sel.value = prev;
+        });
+      }
+
+      // wichtig: bei re-init überschreibt das den alten handler sauber
+      search.oninput = applyFilter;
+    });
+  }
+
+  async function refreshDraft() {
+    const resp = await fetch("/match/" + matchId + "/draft-partial/", { credentials: "same-origin" });
+    if (resp.ok) {
+      root.innerHTML = await resp.text();
+      initDraftSearch(); // <-- NACH dem HTML Replace neu verdrahten
+    }
+  }
+
+  function connect() {
+    const socket = new WebSocket(wsUrl);
+
+    socket.onmessage = function (event) {
+      const data = JSON.parse(event.data);
+      if (data.type === "draft_refresh") refreshDraft();
+      if (data.type === "page_refresh") window.location.reload();
+    };
+
+    socket.onopen = function () {
+      refreshDraft();
+    };
+
+    socket.onclose = function () {
+      setTimeout(connect, 1500);
+    };
+
+    socket.onerror = function () {
+      socket.close();
+    };
+  }
+
+  // falls die initiale Partial schon da ist:
+  initDraftSearch();
+  connect();
+})();
+</script>
