@@ -142,7 +142,6 @@ def hostTournamentDetail(request, tournamentId: int):
     )
 
     if request.method == "POST":
-        form = HostMatchCreateForm(request.POST)
         if form.is_valid():
             playerLeft = form.cleaned_data["playerLeft"]
             playerRight = form.cleaned_data["playerRight"]
@@ -169,8 +168,7 @@ def hostTournamentDetail(request, tournamentId: int):
                 first_pick_side=firstPickSide,
             )
             return redirect("hostTournamentDetail", tournamentId=tournament.id)
-    else:
-        form = HostMatchCreateForm()
+
 
     return render(
         request,
@@ -178,7 +176,6 @@ def hostTournamentDetail(request, tournamentId: int):
         {
             "tournament": tournament,
             "matches": matches,
-            "form": form,
         },
     )
 
