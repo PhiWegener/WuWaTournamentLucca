@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
 from .models import (
     User, Player, Tournament, Boss, Resonator,
-    Match, MatchDraftAction, BossTime
+    Match, BossTime
 )
 
 @admin.register(Tournament)
