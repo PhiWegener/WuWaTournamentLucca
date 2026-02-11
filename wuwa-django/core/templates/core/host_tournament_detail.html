@@ -22,7 +22,7 @@
   {% for m in matches %}
     <li>
       <a href="{% url 'matchDetail' m.id %}">
-        #{{ m.id }} {{ m.player_left.name }} vs {{ m.player_right.name }}
+        {% if m.player_left.name != None %}{{ m.player_left.name }}{% else %} TBD {% endif %} vs {% if m.player_right.name != None %}{{ m.player_right.name }}{% else %} TBD {% endif %}
       </a>
       {% if m.boss %} | Boss: {{ m.boss.name }}{% endif %}
       | Status:

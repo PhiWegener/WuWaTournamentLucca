@@ -13,7 +13,7 @@
       | Status: RUNNING
       </a>
     {% else %}
-      <a>{{ m.player_left.name }} vs {{ m.player_right.name }}
+      <a>{% if m.player_left.name != None %}{{ m.player_left.name }}{% else %} TBD {% endif %} vs {% if m.player_right.name != None %}{{ m.player_right.name }}{% else %} TBD {% endif %}
       | Status:
       {% if m.finished_at %}FINISHED
       {% else %}SCHEDULED
