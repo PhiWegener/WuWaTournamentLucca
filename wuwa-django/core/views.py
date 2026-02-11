@@ -279,7 +279,7 @@ def matchDetail(request, matchId: int):
     context = buildDraftContext(match, request.user)
 
     if isPlayerInMatch and match.boss_id and match.started_at and not match.finished_at:
-        if (userSide == MatchSide.LEFT and match.left_time_ms is None) or (userSide == MatchSide.RIGHT and match-right_time_ms is None):
+        if (userSide == MatchSide.LEFT and match.left_time_ms is None) or (userSide == MatchSide.RIGHT and match.right_time_ms is None):
             context["timeForm"] = MatchTimeSubmitForm()
         else:
             context["timeForm"] = None
