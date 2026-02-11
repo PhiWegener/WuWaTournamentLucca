@@ -7,7 +7,7 @@ def broadcastDraftUpdate(matchId: int):
 
     async_to_sync(channelLayer.group_send)(
         groupName,
-        {"type": "draftUpdated", "payload": {"type": "draft_refresh"}},
+        {"type": "draft_refresh"},
     )
 
 
