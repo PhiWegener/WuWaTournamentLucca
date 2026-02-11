@@ -1,0 +1,9 @@
+<h2>Teilnehmer auswählen - {{ tournament.name }}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Teilnehmer speichern</button>
+</form>
+
+<p><a href="{% url 'hostTournamentDetail' tournament.id %}">Zurück zum Turnier</a></p>

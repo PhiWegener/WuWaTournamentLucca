@@ -16,6 +16,8 @@ urlpatterns = [
 
     path("host/", views.hostTournamentList, name="hostTournamentList"),
     path("host/tournament/<int:tournamentId>/", views.hostTournamentDetail, name="hostTournamentDetail"),
+    path("host/tournament/<int:tournamentId>/participants/", views.hostTournamentParticipants, name="hostTournamentParticipants"),
+
 
     path("host/match/<int:matchId>/start/", views.hostMatchStart, name="hostMatchStart"),
     path("host/match/<int:matchId>/finish/", views.hostMatchFinish, name="hostMatchFinish"),

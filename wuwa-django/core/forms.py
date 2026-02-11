@@ -2,12 +2,6 @@ from django import forms
 from .models import Boss, Match, Player, BossTime, MatchSide, Resonator, DraftActionType
 import re
 
-class HostMatchCreateForm(forms.Form):
-    playerLeft = forms.ModelChoiceField(queryset=Player.objects.all())
-    playerRight = forms.ModelChoiceField(queryset=Player.objects.all())
-    boss = forms.ModelChoiceField(queryset=Boss.objects.all(), required=False)
-    firstPickSide = forms.ChoiceField(choices=MatchSide.choices)
-
 class MatchTimeSubmitForm(forms.Form):
     timeInput = forms.CharField(
         label="Time (M:SS.mmm)",
@@ -106,3 +100,16 @@ class PickConfirmForm(forms.Form):
         if pick is None:
             raise forms.ValidationError("Bitte einen Pick auswählen.")
         return pick
+
+class TournamentParticipantsForm(forms.Form):
+    players=forms.ModelMultipleChoiceField(
+        queryset=Player.objects.all().order_by("name"),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Teilnehmer (genau 8 auswählen)",
+    )
+    def clean_players(self):
+        players = self.cleaned_data["players"]
+        if len(players)  != 8:
+            raise form.ValidationError("Bitte genau 8 Spieler auswählen.")
+        return players

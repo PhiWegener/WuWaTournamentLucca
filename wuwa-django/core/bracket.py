@@ -20,7 +20,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
       R1 M1 -> R2 M1 LEFT
       R1 M2 -> R2 M1 RIGHT
     """
-    players = list(Player.objects.all().order_by("id"))
+    players = list(tournament.players.all().order_by("id"))
 
     if len(players) != 8:
         raise ValueError(f"Need exactly 8 players, got {len(players)}")

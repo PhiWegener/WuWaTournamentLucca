@@ -10,9 +10,9 @@ from .draft import BAN_COUNT, PICK_COUNT, _getCurrentBanSlot, _getCurrentPickSlo
 from .forms import (
     BanConfirmForm,
     DraftActionForm,
-    HostMatchCreateForm,
     MatchTimeSubmitForm,
     PickConfirmForm,
+    TournamentParticipantsForm,
 )
 from .models import (
     Boss,
@@ -27,6 +27,7 @@ from .models import (
 )
 from .permissions import requireLogin, requireRole
 from .ws import broadcastDraftUpdate
+from .bracket import generateSingleElim8
 
 
 def home(request):
@@ -100,8 +101,20 @@ def hostGenerateBracket8(request, tournamentId: int):
 
     tournament = get_object_or_404(Tournament, id=tournamentId)
 
-    from .bracket import generateSingleElim8
-    generateSingleElim8(tournament, overwrite=True)
+    try:
+        generateSingleElim8(tournament, overwrite=True)
+    except ValueError as e:
+        # Matches wieder wie in hostTournamentDetail laden, damit die Seite rendern kann
+        matches = (
+            Match.objects.select_related("player_left", "player_right", "boss", "winner_player")
+            .filter(tournament=tournament)
+            .order_by("-id")
+        )
+        return render(
+            request,
+            "core/host_tournament_detail.html",
+            {"tournament": tournament, "matches": matches, "error": str(e)},
+        )
 
     return redirect("hostTournamentDetail", tournamentId=tournament.id)
 
@@ -618,3 +631,22 @@ def matchDraftReset(request, matchId: int):
     match.save()
 
     return redirect("matchDetail", matchId=matchId)
+
+
+@requireRole(UserRole.ADMIN, UserRole.COMMENTATOR)
+def hostTournamentParticipants(request, tournamentId: int):
+    tournament = get_object_or_404(Tournament, id=tournamentId)
+
+    if request.method == "POST":
+        form = TournamentParticipantsForm(request.POST)
+        if form.is_valid():
+            tournament.players.set(form.cleaned_data["players"])
+            return redirect("hostTournamentDetail", tournamentId=tournament.id)
+    else:
+        form = TournamentParticipantsForm(initial={"players": tournament.players.all()})
+
+    return render(
+        request,
+        "core/host_tournament_participants.html",
+        {"tournament": tournament, "form": form},
+    )

@@ -2,6 +2,21 @@
 
 {% if error %}<p style="color:red">{{ error }}</p>{% endif %}
 
+<p>
+  <a href="{% url 'hostTournamentParticipants' tournament.id %}">
+    Teilnehmer auswählen (Checkbox)
+  </a>
+</p>
+<h3>Teilnehmer</h3>
+<ul>
+  {% for p in tournament.players.all %}
+    <li>{{ p.name }}</li>
+  {% empty %}
+    <li>Noch keine Teilnehmer ausgewählt.</li>
+  {% endfor %}
+</ul>
+
+
 <h3>Matches</h3>
 <ul>
   {% for m in matches %}
