@@ -107,32 +107,32 @@ class Match(models.Model):
         unique_together = [("tournament", "round_index", "match_index")]
         ordering = ["round_index", "match_index"]
 
-# class MatchDraftAction(models.Model):
-#     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="draft_actions")
+class MatchDraftAction(models.Model):
+    match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name="draft_actions")
     
-#     step_index = models.PositiveIntegerField(db_index=True)
-#     action_type = models.CharField(max_length=10, choices=DraftActionType.choices)
-#     acting_side = models.CharField(max_length=5, choices=MatchSide.choices)
-#     target_side = models.CharField(max_length=5, choices=MatchSide.choices)
-#     slot_index = models.PositiveIntegerField(default=1)
-#     is_locked = models.BooleanField(default=False)
+    step_index = models.PositiveIntegerField(db_index=True)
+    action_type = models.CharField(max_length=10, choices=DraftActionType.choices)
+    acting_side = models.CharField(max_length=5, choices=MatchSide.choices)
+    target_side = models.CharField(max_length=5, choices=MatchSide.choices)
+    slot_index = models.PositiveIntegerField(default=1)
+    is_locked = models.BooleanField(default=False)
 
-#     resonator = models.ForeignKey(Resonator, on_delete=models.CASCADE, related_name="draft_actions")
+    resonator = models.ForeignKey(Resonator, on_delete=models.CASCADE, related_name="draft_actions")
 
-#     created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-#     class Meta:
-#         constraints = [
-#             models.UniqueConstraint(
-#                 fields=["match", "step_index"],
-#                 name="uniq_matchdraftaction_match_step",
-#             ),
-#             models.UniqueConstraint(
-#                 fields=["match", "action_type", "slot_index", "acting_side"],
-#                 name="uniq_matchdraftaction_slot_per_side",
-#             ),
-#         ]
-#         ordering = ["step_index"]
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["match", "step_index"],
+                name="uniq_matchdraftaction_match_step",
+            ),
+            models.UniqueConstraint(
+                fields=["match", "action_type", "slot_index", "acting_side"],
+                name="uniq_matchdraftaction_slot_per_side",
+            ),
+        ]
+        ordering = ["step_index"]
 
 
     def __str__(self) -> str:

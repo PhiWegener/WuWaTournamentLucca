@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
 from .models import (
     User, Player, Tournament, Boss, Resonator,
-    Match, BossTime
+    Match, BossTime, MatchDraftAction
 )
 
 @admin.register(Tournament)
@@ -35,5 +35,5 @@ class UserAdmin(DjangoUserAdmin):
 admin.site.register(Boss)
 admin.site.register(Resonator)
 admin.site.register(Match)
-# admin.site.register(MatchDraftAction)
+admin.site.register(MatchDraftAction)
 admin.site.register(BossTime)
