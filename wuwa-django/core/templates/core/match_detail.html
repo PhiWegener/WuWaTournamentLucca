@@ -24,10 +24,12 @@
 </p>
 
 {% if isHost %}
-  <form method="post" action="{% url 'hostMatchStart' match.id %}">
-    {% csrf_token %}
-    <button type="submit">Start</button>
-  </form>
+  {% if not match.started_at %}
+    <form method="post" action="{% url 'hostMatchStart' match.id %}">
+      {% csrf_token %}
+      <button type="submit">Start</button>
+    </form>
+  {% endif %}
 
   {% if match.left_time_ms != None %}
     <p><em>Left Time: {{ match.left_time_ms|msToTime }}</em></p>

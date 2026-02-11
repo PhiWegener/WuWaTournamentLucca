@@ -1,7 +1,7 @@
 import random
 from django.db import transaction
 
-from .models import Match, MatchSide, Player, Tournament
+from .models import Match, MatchSide, Player, Tournament, Boss
 
 
 @transaction.atomic
@@ -21,6 +21,9 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
       R1 M2 -> R2 M1 RIGHT
     """
     players = list(tournament.players.all().order_by("id"))
+    bosses = list(Boss.objects.all())
+    if not bosses:
+        raise ValueError("No Bosses found. Please create at least 1 Boss before generating matches.")
 
     if len(players) != 8:
         raise ValueError(f"Need exactly 8 players, got {len(players)}")
@@ -36,7 +39,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=None,
         player_right=None,
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=2,
@@ -50,7 +53,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=None,
         player_right=None,
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=1,
@@ -62,7 +65,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=None,
         player_right=None,
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=1,
@@ -76,7 +79,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=players[0],
         player_right=players[1],
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=0,
@@ -88,7 +91,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=players[2],
         player_right=players[3],
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=0,
@@ -100,7 +103,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=players[4],
         player_right=players[5],
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=0,
@@ -112,7 +115,7 @@ def generateSingleElim8(tournament: Tournament, *, shuffleSeed: int | None = Non
         tournament=tournament,
         player_left=players[6],
         player_right=players[7],
-        boss=None,
+        boss=random.choice(bosses),
         first_pick_side=MatchSide.LEFT,
         winner_player=None,
         round_index=0,
