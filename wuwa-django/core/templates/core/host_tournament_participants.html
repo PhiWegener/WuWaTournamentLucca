@@ -1,12 +1,83 @@
 <h2>Teilnehmer auswählen - {{ tournament.name }}</h2>
 
-<form method="post">
+<form method="post" id="participantsForm">
   {% csrf_token %}
-  <label for="playerSearch"><b>Player suchen</b></label>
-  <input id="playerSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off"
-        style="width: 100%; max-width: 420px;">
-  {{ form.as_p }}
-  <button type="submit">Teilnehmer speichern</button>
+
+  {% if form.non_field_errors %}
+    <div style="padding: 10px; border: 1px solid #c33; background: #fee; margin: 10px 0;">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  {% if form.players.errors %}
+    <div style="padding: 10px; border: 1px solid #c33; background: #fee; margin: 10px 0;">
+      {{ form.players.errors }}
+    </div>
+  {% endif %}
+
+  <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; max-width: 980px;">
+    <div>
+      <label for="availableSearch"><b>Verfügbare Spieler suchen</b></label>
+      <input id="availableSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off"
+             style="width: 100%; max-width: 420px; margin: 6px 0 10px 0;">
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <b>Verfügbar</b>
+        <small id="availableCount"></small>
+      </div>
+
+      <select id="availablePlayers" multiple size="16" style="width: 100%; min-width: 260px;">
+        {% with selectedValues=form.players.value %}
+          {% for p in form.players.field.queryset %}
+            {% if not (p.pk|stringformat:"s" in selectedValues) %}
+              <option value="{{ p.pk }}">{{ p.name }}</option>
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+      </select>
+    </div>
+
+    <div style="display: grid; gap: 8px; padding-top: 56px;">
+      <button type="button" id="btnAdd" style="padding: 8px 10px;">&gt;</button>
+      <button type="button" id="btnAddAll" style="padding: 8px 10px;">&gt;&gt;</button>
+      <div style="height: 10px;"></div>
+      <button type="button" id="btnRemove" style="padding: 8px 10px;">&lt;</button>
+      <button type="button" id="btnRemoveAll" style="padding: 8px 10px;">&lt;&lt;</button>
+    </div>
+
+    <div>
+      <label for="selectedSearch"><b>Ausgewählte Spieler suchen</b></label>
+      <input id="selectedSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off"
+             style="width: 100%; max-width: 420px; margin: 6px 0 10px 0;">
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <b>Ausgewählt</b>
+        <small><span id="selectedCount"></span> / 8</small>
+      </div>
+
+      <!-- DAS ist das Feld, das wirklich an Django gepostet wird (name="players") -->
+      <select id="selectedPlayers" name="players" multiple size="16" style="width: 100%; min-width: 260px;">
+        {% with selectedValues=form.players.value %}
+          {% for p in form.players.field.queryset %}
+            {% if p.pk|stringformat:"s" in selectedValues %}
+              <option value="{{ p.pk }}" selected>{{ p.name }}</option>
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+      </select>
+
+      <p style="margin: 8px 0 0 0;">
+        <small>
+          Tipp: Doppelklick verschiebt. Shift/Ctrl (Cmd) für Mehrfachauswahl.
+        </small>
+      </p>
+    </div>
+  </div>
+
+  <div style="margin-top: 16px; display: flex; gap: 10px; align-items: center;">
+    <button type="submit" id="submitBtn">Teilnehmer speichern</button>
+    <span id="hint" style="font-size: 0.9em;"></span>
+  </div>
 </form>
 
 <p><a href="{% url 'hostTournamentDetail' tournament.id %}">Zurück zum Turnier</a></p>
@@ -14,20 +85,95 @@
 
 <script>
 (function () {
-  const search = document.getElementById("playerSearch");
-  const list = document.getElementById("id_players"); // Django CheckboxSelectMultiple -> <ul id="id_players">
-  if (!search || !list) return;
+  const availableSearch = document.getElementById("availableSearch");
+  const selectedSearch = document.getElementById("selectedSearch");
+  const available = document.getElementById("availablePlayers");
+  const selected = document.getElementById("selectedPlayers");
 
-  const items = Array.from(list.querySelectorAll("li"));
+  const btnAdd = document.getElementById("btnAdd");
+  const btnAddAll = document.getElementById("btnAddAll");
+  const btnRemove = document.getElementById("btnRemove");
+  const btnRemoveAll = document.getElementById("btnRemoveAll");
 
-  function apply() {
-    const t = search.value.trim().toLowerCase();
-    items.forEach(li => {
-      const text = li.textContent.toLowerCase();
-      li.style.display = (!t || text.includes(t)) ? "" : "none";
-    });
+  const selectedCount = document.getElementById("selectedCount");
+  const availableCount = document.getElementById("availableCount");
+  const submitBtn = document.getElementById("submitBtn");
+  const hint = document.getElementById("hint");
+
+  if (!availableSearch || !selectedSearch || !available || !selected) return;
+
+  function updateCounts() {
+    selectedCount.textContent = String(selected.options.length);
+    availableCount.textContent = String(available.options.length);
+
+    const ok = selected.options.length === 8;
+    submitBtn.disabled = !ok;
+    hint.textContent = ok ? "" : "Bitte genau 8 Spieler auswählen.";
   }
 
-  search.addEventListener("input", apply);
+  function sortOptions(selectEl) {
+    const opts = Array.from(selectEl.options);
+    opts.sort((a, b) => a.textContent.localeCompare(b.textContent, undefined, { sensitivity: "base" }));
+    selectEl.innerHTML = "";
+    for (const o of opts) selectEl.appendChild(o);
+  }
+
+  function moveSelected(from, to) {
+    const moving = Array.from(from.selectedOptions);
+    for (const opt of moving) {
+      opt.selected = false;
+      to.appendChild(opt);
+    }
+    sortOptions(from);
+    sortOptions(to);
+    updateCounts();
+    applyFilters();
+  }
+
+  function moveAll(from, to) {
+    const moving = Array.from(from.options);
+    for (const opt of moving) {
+      opt.selected = false;
+      to.appendChild(opt);
+    }
+    sortOptions(from);
+    sortOptions(to);
+    updateCounts();
+    applyFilters();
+  }
+
+  function filterSelect(selectEl, term) {
+    const t = term.trim().toLowerCase();
+    for (const opt of Array.from(selectEl.options)) {
+      const text = opt.textContent.toLowerCase();
+      opt.hidden = !!t && !text.includes(t);
+    }
+  }
+
+  function applyFilters() {
+    filterSelect(available, availableSearch.value);
+    filterSelect(selected, selectedSearch.value);
+  }
+
+  btnAdd.addEventListener("click", () => moveSelected(available, selected));
+  btnRemove.addEventListener("click", () => moveSelected(selected, available));
+  btnAddAll.addEventListener("click", () => moveAll(available, selected));
+  btnRemoveAll.addEventListener("click", () => moveAll(selected, available));
+
+  available.addEventListener("dblclick", () => moveSelected(available, selected));
+  selected.addEventListener("dblclick", () => moveSelected(selected, available));
+
+  availableSearch.addEventListener("input", applyFilters);
+  selectedSearch.addEventListener("input", applyFilters);
+
+  // Sicherheit: vor Submit alle Optionen im rechten Feld als selected markieren
+  // (Browser machen das i.d.R. schon, aber so ist es garantiert.)
+  document.getElementById("participantsForm")?.addEventListener("submit", () => {
+    for (const opt of Array.from(selected.options)) opt.selected = true;
+  });
+
+  sortOptions(available);
+  sortOptions(selected);
+  updateCounts();
 })();
 </script>
