@@ -10,3 +10,10 @@ def broadcastDraftUpdate(matchId: int):
         {"type": "draftUpdated", "payload": {"type": "refresh"}},
     )
 
+
+def broadcastPageRefresh(matchId: int):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"matchDraft_{matchId}",
+        {"type": "page_refresh"},
+    )

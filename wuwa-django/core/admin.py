@@ -6,6 +6,13 @@ from .models import (
     Match, MatchDraftAction, BossTime
 )
 
+@admin.register(Tournament)
+class TournamentAdmin(admin.ModelAdmin):
+    autocomplete_fields = ["players"]
+
+@admin.register(Player)
+class PlayerAdmin(admin.ModelAdmin):
+    search_fields = ["name"]
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
@@ -23,8 +30,8 @@ class UserAdmin(DjangoUserAdmin):
     list_filter = ("role", "is_staff", "is_superuser")
 
 
-admin.site.register(Player)
-admin.site.register(Tournament)
+# admin.site.register(Player)
+# admin.site.register(Tournament)
 admin.site.register(Boss)
 admin.site.register(Resonator)
 admin.site.register(Match)

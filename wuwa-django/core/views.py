@@ -26,7 +26,7 @@ from .models import (
     UserRole,
 )
 from .permissions import requireLogin, requireRole
-from .ws import broadcastDraftUpdate
+from .ws import broadcastDraftUpdate, broadcastPageRefresh
 from .bracket import generateSingleElim8
 
 
@@ -279,7 +279,10 @@ def matchDetail(request, matchId: int):
     context = buildDraftContext(match, request.user)
 
     if isPlayerInMatch and match.boss_id and match.started_at and not match.finished_at:
-        context["timeForm"] = MatchTimeSubmitForm()
+        if (userSide == MatchSide.LEFT and match.left_time_ms is None) or (userSide == MatchSide.RIGHT and match-right_time_ms is None):
+            context["timeForm"] = MatchTimeSubmitForm()
+        else:
+            context["timeForm"] = None
     else:
         context["timeForm"] = None
 
@@ -354,7 +357,13 @@ def matchSubmitTime(request, matchId: int):
 
     if match.boss is None:
         return redirect("matchDetail", matchId=matchId)
+    # Nur 1x submitten erlaubt (egal ob besser)
+    if userSide == MatchSide.LEFT and match.left_time_ms is not None:
+        return redirect("matchDetail", matchId=matchId)
 
+    if userSide == MatchSide.RIGHT and match.right_time_ms is not None:
+        return redirect("matchDetail", matchId=matchId)
+        
     form = MatchTimeSubmitForm(request.POST)
     if not form.is_valid():
         return redirect("matchDetail", matchId=matchId)
@@ -373,17 +382,14 @@ def matchSubmitTime(request, matchId: int):
         bossTime.best_time_ms = timeMs
         bossTime.save()
 
-    # Match-spezifische Zeit updaten (nur wenn besser)
     if userSide == MatchSide.LEFT:
-        current = match.left_time_ms
-        if current is None or timeMs < current:
-            match.left_time_ms = timeMs
+        match.left_time_ms = timeMs
     else:
-        current = match.right_time_ms
-        if current is None or timeMs < current:
-            match.right_time_ms = timeMs
+        match.right_time_ms = timeMs
+
 
     match.save()
+    broadcastPageRefresh(match.id)
     return redirect("matchDetail", matchId=matchId)
 
 
@@ -531,6 +537,7 @@ def matchConfirmPicks(request, matchId: int):
         match.right_picks_confirmed = True
         match.save()
         broadcastDraftUpdate(match.id)
+        broadcastPageRefresh(match.id)
         return redirect("matchDetail", matchId=matchId)
 
     usedPickIds = set(
@@ -603,7 +610,7 @@ def matchConfirmPicks(request, matchId: int):
             match.left_picks_confirmed = True
             match.right_picks_confirmed = True
             match.save()
-
+            broadcastPageRefresh(match.id)
     broadcastDraftUpdate(match.id)
     return redirect("matchDetail", matchId=matchId)
 

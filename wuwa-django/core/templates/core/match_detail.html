@@ -75,8 +75,11 @@
 
     socket.onmessage = function (event) {
       const data = JSON.parse(event.data);
-      if (data.type === "refresh") {
+      if (data.type === "draft_refresh") {
         refreshDraft();
+      }
+      if (data.type === "page_refresh") {
+        window.location.reload();
       }
     };
 
