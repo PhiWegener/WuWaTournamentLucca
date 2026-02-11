@@ -111,5 +111,5 @@ class TournamentParticipantsForm(forms.Form):
     def clean_players(self):
         players = self.cleaned_data["players"]
         if len(players)  != 8:
-            raise form.ValidationError("Bitte genau 8 Spieler auswählen.")
+            raise forms.ValidationError("Bitte genau 8 Spieler auswählen.")
         return players
