@@ -40,6 +40,8 @@ class User(AbstractUser):
 class Tournament(models.Model):
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
+    
+    player = models.ManyToManyField(Player, blank=True, related_name="tournaments")
 
     def __str__(self) -> str:
         return self.name
