@@ -29,7 +29,7 @@
       <select id="availablePlayers" multiple size="16" style="width: 100%; min-width: 260px;">
         {% with selectedValues=form.players.value %}
           {% for p in form.players.field.queryset %}
-            {% if not (p.pk|stringformat:"s" in selectedValues) %}
+            {% if p.pk|stringformat:"s" not in selectedValues %}
               <option value="{{ p.pk }}">{{ p.name }}</option>
             {% endif %}
           {% endfor %}
