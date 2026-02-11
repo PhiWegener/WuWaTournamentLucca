@@ -145,6 +145,8 @@
     {% if userSide %}<p>You are: <b>{{ userSide }}</b></p>{% endif %}
     <form method="post" action="{% url 'matchConfirmPicks' match.id %}">
       {% csrf_token %}
+      <label for="resSearch"><b>Resonator suchen</b></label>
+      <input id="resSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off" style="width: 100%; max-width: 420px;">
       {{ pickForm.as_p }}
       <button type="submit">Confirm picks</button>
     </form>

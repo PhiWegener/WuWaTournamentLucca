@@ -2,6 +2,8 @@
 
 <form method="post">
   {% csrf_token %}
+  <label for="resSearch"><b>Player suchen</b></label>
+  <input id="resSearch" type="text" placeholder="Tippe zum Filtern..." autocomplete="off" style="width: 100%; max-width: 420px;">
   {{ form.as_p }}
   <button type="submit">Teilnehmer speichern</button>
 </form>
