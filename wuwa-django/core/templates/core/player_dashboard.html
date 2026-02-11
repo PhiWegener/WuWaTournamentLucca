@@ -8,10 +8,18 @@
 <ul>
 {% for m in matches %}
   <li>
-    {% if m.started_at %}
-      <a href="{% url 'matchDetail' m.id %}">{{ m.player_left.name }} vs {{ m.player_right.name }}</a>
+    {% if m.started_at and not m.finished_at %}
+      <a href="{% url 'matchDetail' m.id %}">{{ m.player_left.name }} vs {{ m.player_right.name }}
+      | Status: RUNNING
+      </a>
     {% else %}
-      {{ m.player_left.name }} vs {{ m.player_right.name }} (not started yet)
+      <a>{{ m.player_left.name }} vs {{ m.player_right.name }} (not started yet)
+      | Status:
+      {% if m.finished_at %}FINISHED
+      {% else %}SCHEDULED
+      {% endif %}
+      {% if m.winner_player %} | Winner: {{ m.winner_player.name }}{% endif %}
+      </a>
     {% endif %}
   </li>
 {% endfor %}
