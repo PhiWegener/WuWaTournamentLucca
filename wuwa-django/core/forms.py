@@ -50,16 +50,16 @@ class MatchTimeSubmitForm(forms.Form):
 
         raise forms.ValidationError("Invalid time format. Use M:SS.mmm (e.g. 1:23.456).")
 
-# class DraftActionForm(forms.Form):
-#     actionType = forms.ChoiceField(choices = DraftActionType.choices)
-#     actingSide = forms.ChoiceField(choices = MatchSide.choices)
-#     resonator = forms.ModelChoiceField(queryset=Resonator.objects.filter(is_enabled=True))
+class DraftActionForm(forms.Form):
+    actionType = forms.ChoiceField(choices = DraftActionType.choices)
+    actingSide = forms.ChoiceField(choices = MatchSide.choices)
+    resonator = forms.ModelChoiceField(queryset=Resonator.objects.filter(is_enabled=True))
 
-#     def __init__(self, *args, **kwargs):
-#         availableResonators = kwargs.pop("availableResonators", None)
-#         super().__init__(*args, **kwargs)
-#         if availableResonators is not None:
-#             self.fields["resonator"].queryset = availableResonators
+    def __init__(self, *args, **kwargs):
+        availableResonators = kwargs.pop("availableResonators", None)
+        super().__init__(*args, **kwargs)
+        if availableResonators is not None:
+            self.fields["resonator"].queryset = availableResonators
 
 class BanConfirmForm(forms.Form):
     ban = forms.ModelChoiceField(
