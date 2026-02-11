@@ -43,10 +43,10 @@ class MatchDraftConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(payload))
 
     async def draft_refresh(self, event):
-        await self.send_json({"type": "draft_refresh"})
+        await self.send(text_data=json.dumps({"type": "draft_refresh"}))
 
     async def page_refresh(self, event):
-        await self.send_json({"type": "page_refresh"})
+        await self.send(text_data=json.dumps({"type": "page_refresh"}))
 
     @database_sync_to_async
     def _userAllowed(self, userId):
