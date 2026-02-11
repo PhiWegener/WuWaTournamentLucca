@@ -141,33 +141,33 @@ def hostTournamentDetail(request, tournamentId: int):
         .order_by("-id")
     )
 
-    if request.method == "POST":
-        if form.is_valid():
-            playerLeft = form.cleaned_data["playerLeft"]
-            playerRight = form.cleaned_data["playerRight"]
-            boss = form.cleaned_data["boss"]
-            firstPickSide = form.cleaned_data["firstPickSide"]
+    # if request.method == "POST":
+    #     if form.is_valid():
+    #         playerLeft = form.cleaned_data["playerLeft"]
+    #         playerRight = form.cleaned_data["playerRight"]
+    #         boss = form.cleaned_data["boss"]
+    #         firstPickSide = form.cleaned_data["firstPickSide"]
 
-            if playerLeft.id == playerRight.id:
-                return render(
-                    request,
-                    "core/host_tournament_detail.html",
-                    {
-                        "tournament": tournament,
-                        "matches": matches,
-                        "form": form,
-                        "error": "Left and right Player must be different.",
-                    },
-                )
+    #         if playerLeft.id == playerRight.id:
+    #             return render(
+    #                 request,
+    #                 "core/host_tournament_detail.html",
+    #                 {
+    #                     "tournament": tournament,
+    #                     "matches": matches,
+    #                     "form": form,
+    #                     "error": "Left and right Player must be different.",
+    #                 },
+    #             )
 
-            Match.objects.create(
-                tournament=tournament,
-                player_left=playerLeft,
-                player_right=playerRight,
-                boss=boss,
-                first_pick_side=firstPickSide,
-            )
-            return redirect("hostTournamentDetail", tournamentId=tournament.id)
+    #         Match.objects.create(
+    #             tournament=tournament,
+    #             player_left=playerLeft,
+    #             player_right=playerRight,
+    #             boss=boss,
+    #             first_pick_side=firstPickSide,
+    #         )
+    #         return redirect("hostTournamentDetail", tournamentId=tournament.id)
 
 
     return render(
@@ -394,32 +394,32 @@ def matchSubmitTime(request, matchId: int):
 
 
 
-def getConfirmedBans(match, actingSide: str):
-    return MatchDraftAction.objects.filter(
-        match=match,
-        action_type=DraftActionType.BAN,
-        acting_side=actingSide,
-    ).values_list("resonator_id", flat=True)
+# def getConfirmedBans(match, actingSide: str):
+#     return MatchDraftAction.objects.filter(
+#         match=match,
+#         action_type=DraftActionType.BAN,
+#         acting_side=actingSide,
+#     ).values_list("resonator_id", flat=True)
 
 
-def getBansAgainstSide(match, targetSide: str):
-    return MatchDraftAction.objects.filter(
-        match=match,
-        action_type=DraftActionType.BAN,
-        target_side=targetSide,
-    ).values_list("resonator_id", flat=True)
+# def getBansAgainstSide(match, targetSide: str):
+#     return MatchDraftAction.objects.filter(
+#         match=match,
+#         action_type=DraftActionType.BAN,
+#         target_side=targetSide,
+#     ).values_list("resonator_id", flat=True)
 
 
-def getAllPicked(match):
-    return MatchDraftAction.objects.filter(
-        match=match,
-        action_type=DraftActionType.PICK,
-    ).values_list("resonator_id", flat=True)
+# def getAllPicked(match):
+#     return MatchDraftAction.objects.filter(
+#         match=match,
+#         action_type=DraftActionType.PICK,
+#     ).values_list("resonator_id", flat=True)
 
 
-def getPickAvailableForSide(match, side: str):
-    bannedAgainstMe = set(getBansAgainstSide(match, side))
-    return Resonator.objects.filter(is_enabled=True).exclude(id__in=bannedAgainstMe)
+# def getPickAvailableForSide(match, side: str):
+#     bannedAgainstMe = set(getBansAgainstSide(match, side))
+#     return Resonator.objects.filter(is_enabled=True).exclude(id__in=bannedAgainstMe)
 
 
 @transaction.atomic

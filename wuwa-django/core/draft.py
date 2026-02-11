@@ -38,14 +38,14 @@ def _getCurrentBanSlot(match) -> int:
     return len(set(lockedSlots)) + 1
 
 
-def _getBanAvailable(match, *, allowReselectAction: MatchDraftAction | None):
-    usedIds = set(
-        MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
-    )
-    if allowReselectAction is not None:
-        usedIds.discard(allowReselectAction.resonator_id)
+# def _getBanAvailable(match, *, allowReselectAction: MatchDraftAction | None):
+#     usedIds = set(
+#         MatchDraftAction.objects.filter(match=match).values_list("resonator_id", flat=True)
+#     )
+#     if allowReselectAction is not None:
+#         usedIds.discard(allowReselectAction.resonator_id)
 
-    return Resonator.objects.filter(is_enabled=True).exclude(id__in=usedIds)
+#     return Resonator.objects.filter(is_enabled=True).exclude(id__in=usedIds)
 
 
 def _getCurrentPickSlot(match) -> int:
