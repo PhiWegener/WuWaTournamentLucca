@@ -99,7 +99,7 @@
 
 <hr>
 
-{% if isPlayerInMatch and timeForm %}
+{% if isPlayerInMatch and timeForm and banPhaseDone and pickPhaseDone %}
   <h3>Submit time</h3>
   {% if match.boss %}
     <form method="post" action="{% url 'matchSubmitTime' match.id %}">
