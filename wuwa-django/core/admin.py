@@ -35,5 +35,5 @@ class UserAdmin(DjangoUserAdmin):
 admin.site.register(Boss)
 admin.site.register(Resonator)
 admin.site.register(Match)
-admin.site.register(MatchDraftAction)
+# admin.site.register(MatchDraftAction)
 admin.site.register(BossTime)
